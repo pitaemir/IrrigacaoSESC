@@ -1,3 +1,9 @@
+# 🌱 Irrigação SESC – Automação com RTC DS3231 e Arduino
+
+Este projeto tem como objetivo automatizar o sistema de irrigação de uma horta utilizando o microcontrolador **Arduino** e o módulo de relógio de tempo real **DS3231**. O sistema ativa uma válvula (simulada com um LED) todos os dias em um horário programado, por um período definido, sem a necessidade de intervenção manual.
+
+## 📦 Estrutura do Projeto
+
 
 ## 🧠 Funcionalidades
 
