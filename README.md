@@ -51,3 +51,6 @@ Este projeto está licenciado sob a [MIT License](LICENSE).
 ---
 
 Desenvolvido com 💚 por [@pitaemir](https://github.com/pitaemir)
+
+## Arquitetura Sistema Web:
+
