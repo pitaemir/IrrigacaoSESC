@@ -55,6 +55,10 @@ Nesse projeto web sera utilizado a framework React.js para o  front-end e Node.j
   - Backend: node.js
 - Servidor Web e banco de dados podem estar no mesmo componente fisico?
 - Banco de Dados? Postgress - relacional.
+- Configuracao dos parametros do sistema embarcado. Atraves do servidor web ou atraves do servidor do esp?
+  - Via servidor do ESP32. Diretamente, de modo que havera uma pagina web simples sendo servda pelo ESP32.
+- Usaremos RTC do ESP32 ou RTC exterior ja utilizado anteriormente? Pesquisar as consequencias e beneficios.
+- Como sera feito o Deploy do nosso sitema WEB? Vercel, ou opcao.
 
 ## TODO:
 
