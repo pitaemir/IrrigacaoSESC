@@ -59,6 +59,8 @@ Nesse projeto web sera utilizado a framework React.js para o  front-end e Node.j
   - Via servidor do ESP32. Diretamente, de modo que havera uma pagina web simples sendo servda pelo ESP32.
 - Usaremos RTC do ESP32 ou RTC exterior ja utilizado anteriormente? Pesquisar as consequencias e beneficios.
 - Como sera feito o Deploy do nosso sitema WEB? Vercel, ou opcao.
+  - Zabbix [`Zabbix`](https://www.zabbix.com/features)
+  - Ngrok [`Ngrok`](https://ngrok.com/).
 
 ## TODO:
 
