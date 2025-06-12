@@ -68,6 +68,8 @@ Nesse projeto web sera utilizado a framework React.js para o  front-end e Node.j
 2. Implementar a pagina web e decidir as ferramentas utilizadas. Integrar codigo do RTC ao codigo do servidor, bem como implementar codigo de leitura dos demais sensores.
 3. Configurar e desenvolver a base de dados.
 4. Configurar e desenvolver o servidor web.
+5. Realizar documentacao do nosso hardware, bem como seus pinos.
+6. Caso a opcao do firebase realmente seja escolhida entao entender comportamento da biblioteca que foi modificada para testes.
 
 
 ## Licença
