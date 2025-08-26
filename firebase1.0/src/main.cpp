@@ -4,8 +4,11 @@
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h"
 
+// Wifi credentials
 #define WIFI_SSID "JR"
 #define WIFI_PASSWORD "22070000"
+
+// Firebase project API Key
 #define API_KEY "AIzaSyA1LI1y7m9T-av1WW1sDQMSdqyaG6RtDFU"
 #define DATABASE_URL "https://hortasesc-9b067-default-rtdb.firebaseio.com/"
 
@@ -56,7 +59,7 @@ void loop() {
   if (Firebase.ready() && singupOK &&(millis() - sendDataPrevMillis > 5000 || sendDataPrevMillis == 0)) {
     sendDataPrevMillis = millis();
     Serial.println(test);
-    delay(1000);
+    delay(1000); //to remove
     if (Firebase.RTDB.setInt(&fbdo, "test/test_number", test)) {
       Serial.println();
       Serial.println("PASSED");
