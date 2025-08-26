@@ -16,15 +16,39 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-bool singupOK = false;
-unsigned long sendDataPrevMillis = 0;
-int test = 0;
-String message = "Hello World!";
+bool signupOK = false;
 
+// Variable to track
+String watchPath = "/test/control";
+
+// Callback called when the tracked variable changes
+void streamCallback(FirebaseStream data) {
+  Serial.println("=== STREAM EVENT ===");
+  Serial.printf("Path: %s\n", data.streamPath().c_str());
+  Serial.printf("Type: %s\n", data.dataType().c_str());
+  Serial.printf("Data: %s\n", data.stringData().c_str());
+
+  // true = on
+  // false = off
+  if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean) {
+    bool val = data.boolData();
+    if (val) {
+      Serial.println(">>> CONTROL = true (ON)");
+    } else {
+      Serial.println(">>> CONTROL = false (OFF)");
+    }
+}
+  Serial.println("====================");
+}
+
+void streamTimeoutCallback(bool timeout) {
+  if (timeout) {
+    Serial.println("Stream timeout, reconectando...");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
-
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to WIFI");
   while (WiFi.status() != WL_CONNECTED) {
@@ -34,51 +58,31 @@ void setup() {
   Serial.println();
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
-  Serial.println();
 
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
-  // corrigido: signUp
   if (Firebase.signUp(&config, &auth, "", "")) {
     Serial.println("signUp OK");
-   singupOK = true;
+    signupOK = true;
   } else {
-    // corrigido: signupError + printf
     Serial.printf("signUp failed: %s\n", config.signer.signupError.message.c_str());
   }
 
-  // corrigido: tokenStatusCallback
   config.token_status_callback = tokenStatusCallback;
 
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
+
+  // Inicia stream para monitorar alterações no caminho
+  if (!Firebase.RTDB.beginStream(&fbdo, watchPath.c_str())) {
+    Serial.printf("beginStream failed: %s\n", fbdo.errorReason().c_str());
+  } else {
+    Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeoutCallback);
+    Serial.println("Ouvindo mudanças em " + watchPath);
+  }
 }
 
 void loop() {
-  if (Firebase.ready() && singupOK &&(millis() - sendDataPrevMillis > 5000 || sendDataPrevMillis == 0)) {
-    sendDataPrevMillis = millis();
-    Serial.println(test);
-    delay(1000); //to remove
-    if (Firebase.RTDB.setInt(&fbdo, "test/test_number", test)) {
-      Serial.println();
-      Serial.println("PASSED");
-      Serial.println(test);
-      Serial.println("saved to: " + fbdo.dataPath());
-      test++;
-    } else {
-      Serial.println();
-      Serial.println("FAILED" + fbdo.errorReason());
-    }
-      if (Firebase.RTDB.setString(&fbdo, "test/test_message", message)) {
-      Serial.println();
-      Serial.println("PASSED");
-      Serial.println(message);
-      Serial.println("saved to: " + fbdo.dataPath());
-      test++;
-    } else {
-      Serial.println();
-      Serial.println("FAILED" + fbdo.errorReason());
-    }
-}
+  // nada especial aqui, o callback é chamado automaticamente
 }
