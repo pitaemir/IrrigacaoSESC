@@ -16,8 +16,8 @@ const char* api_key =  "AIzaSyBv8u74USCKpTlFDBbKrtZ76RyNyyJG2dU";
 const char* database_url = "https://console.firebase.google.com/u/0/project/irrigacaosesc/database/irrigacaosesc-default-rtdb/data/~2F";
 
 // Define the user Email and password that is used to authenticate with Firebase
-const char* user_email = "emirbraz.d2@gmail.com";
-const char* user_password = "374568291";
+const char* user_email = "";
+const char* user_password = "";
 
 // Assign output variables to GPIO pins
 const int ledPin = 25;
@@ -288,4 +288,5 @@ void RTCTask(void *pvParameters) {
     // 10ms é um valor comum. Se a resposta do servidor parecer lenta, pode reduzir para 1ms.
     vTaskDelay(pdMS_TO_TICKS(10)); 
   }
+
 }
