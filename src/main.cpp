@@ -20,7 +20,7 @@
 #define DATABASE_URL "https://hortasesc-9b067-default-rtdb.firebaseio.com/"
 
 // FREE RTOS Debug Variables
-const int debugLedPin = 19;
+const int debugLedPin = 19; // pino de saida do sinal
 const int debugLedPin2 = 18;
 const int debugLedPin3 = 5;
 TaskHandle_t taskHandle1;
@@ -44,12 +44,11 @@ unsigned long oldTime;            // Armazena o tempo anterior
 //BME280 Variables
 Adafruit_BME280 bme;
 // Firebase Variables
-
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 bool signupOK = false;
-String watchPath = "/test/control"; // Variable to track
+String watchPath = "/test"; // Variable to track
 
 
 // FUNCTIONS PROTOTYPES
@@ -61,8 +60,6 @@ void Task4(void *pvParameters);  // Task que lida com o armazenamento local dos 
 void onAlarm(); // Função chamada quando o alarme dispara
 
 void pulseCounter(); // Função de interrupção para contar pulsos do sensor de fluxo
-
-
 
 void imprimirDataHora(DateTime momento) {
   Serial.print("Data: ");
@@ -167,13 +164,52 @@ void pulseCounter() {
 // Callback called when the tracked variable changes
 void streamCallback(FirebaseStream data) {
   Serial.println("=== STREAM EVENT ===");
-  Serial.printf("Path: %s\n", data.streamPath().c_str());
+  Serial.printf("Stream Path: %s\n", data.streamPath().c_str());
   Serial.printf("Type: %s\n", data.dataType().c_str());
   Serial.printf("Data: %s\n", data.stringData().c_str());
 
   // true = on
   // false = off
-  if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean) {
+  if (data.dataTypeEnum() == fb_esp_rtdb_data_type_json) {
+    Serial.println(">>> Recebido um objeto JSON para agendamento.");
+
+    // Crie um objeto JSON para analisar os dados
+    FirebaseJson json;
+    json.setJsonData(data.stringData());
+
+    int year, month, day, hour, minute, second;
+
+    // Use o método get para extrair os valores
+    // O valor é armazenado em uma FirebaseJsonData
+    FirebaseJsonData jsonData;
+        
+    json.get(jsonData, "year");
+    year = jsonData.intValue;
+    Serial.println("year = " + String(year));
+
+    json.get(jsonData, "month");
+    month = jsonData.intValue;
+    Serial.println("month = " + String(month));
+
+    json.get(jsonData, "day");
+    day = jsonData.intValue;
+    Serial.println("day = " + String(day));
+
+    json.get(jsonData, "hour");
+    hour = jsonData.intValue;
+    Serial.println("hour = " + String(hour));
+
+    json.get(jsonData, "minute");
+    minute = jsonData.intValue;
+    Serial.println("minute = " + String(minute));
+
+    json.get(jsonData, "second");
+    second = jsonData.intValue;
+    Serial.println("second = " + String(second));
+
+    // Chame vetor para agendar o alarme
+    vetor[]
+  } else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean) {
     bool val = data.boolData();
 
     if (val) {
@@ -183,16 +219,47 @@ void streamCallback(FirebaseStream data) {
       Serial.println(">>> CONTROL = false (OFF)");
       digitalWrite(debugLedPin, LOW);
     }
+  } else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_integer) {
+    int val = data.intData();
+    String path = data.dataPath();
 
-    //int year = data.intData();
-    //int month = data.intData();
-    //int day = data.intData();
-    //int hour = data.intData();
-    //int minute = data.intData();
-    //int second = data.intData();
-//
-    //scheduleAlarm(year, month, day, hour, minute, second);
+    Serial.println(">>> Recebido um valor inteiro!");
+    
+    // Tratamento específico para o caso de um valor direto em "/test"
+    if (path == "/test") {
+      Serial.println(">>> Alerta: O valor '" + String(val) + "' foi recebido diretamente no caminho '/test'.");
+      Serial.println(">>> Isso pode ter sobrescrito todo o objeto JSON, apagando as chaves internas (year, month, etc.).");
+      return; // Interrompe a função para evitar processamento incorreto
+    }
+
+    // A partir daqui, o código só lida com sub-chaves
+    String subKey = path.substring(path.lastIndexOf('/') + 1);
+    Serial.println(">>> Sub-chave identificada: '" + subKey + "'");
+
+    if (subKey == "year") {
+        Serial.println(">>> Chave 'year' atualizada para: " + String(val));
+        // int year = val;
+    } else if (subKey == "month") {
+        Serial.println(">>> Chave 'month' atualizada para: " + String(val));
+        // int month = val;
+    } else if (subKey == "day") {
+        Serial.println(">>> Chave 'day' atualizada para: " + String(val));
+        // int day = val;
+    } else if (subKey == "hour") {
+        Serial.println(">>> Chave 'hour' atualizada para: " + String(val));
+        // int hour = val;
+    } else if (subKey == "minute") {
+        Serial.println(">>> Chave 'minute' atualizada para: " + String(val));
+        // int minute = val;
+    } else if (subKey == "second") {
+        Serial.println(">>> Chave 'second' atualizada para: " + String(val));
+        // int second = val;
+    } else {
+        Serial.println(">>> Chave desconhecida '" + subKey + "' com valor: " + String(val));
+    }
   }
+
+  //scheduleAlarm(vetor);
   Serial.println("====================");
   return;
 }
@@ -251,6 +318,7 @@ void setup() {
     Serial.printf("beginStream failed: %s\n", fbdo.errorReason().c_str());
   } else {
     Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeoutCallback);
+
     Serial.println("Ouvindo mudanças em " + watchPath);
   }
 
