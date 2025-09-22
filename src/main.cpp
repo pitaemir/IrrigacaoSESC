@@ -31,8 +31,16 @@ TaskHandle_t taskHandle4;
 const int ClockInterruptPin = 4; // GPIO onde o pino INT/SQW do DS3231 está conectado
 volatile bool alarmFiredFlag = false; // Flag para indicar que o alarme foi disparado
 char diasDaSemana[7][12] = {"Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"};  // (year, month, day, hour, minutes, seconds)
-DateTime alarm1Time = DateTime(2025, 9, 5, 16, 4, 0);
+DateTime alarm1Time = DateTime(2025, 9, 19, 17, 54, 0);
 DateTime alarm2Time = DateTime(2025, 9, 5, 16, 6, 0);
+// Variáveis globais para armazenar a data/hora vinda do Firebase
+int fbYear = 2025;
+int fbMonth = 1;
+int fbDay = 1;
+int fbHour = 0;
+int fbMinute = 0;
+int fbSecond = 0;
+int fbDuration = 1; // Duração em minutos
 RTC_DS3231 myRTC;
 // Water Flow Sensor Variables
 const int sensorPin = 2;          // Pino onde o sensor de fluxo está conectado   
@@ -141,7 +149,7 @@ void scheduleAlarm(int year, int month, int day, int hour, int minute, int secon
   
   DateTime alarm1Time = DateTime(year, month, day, hour, minute, second);
 
-  DateTime alarm2Time = alarm1Time + TimeSpan(0, 0, 1, 0);
+  DateTime alarm2Time = alarm1Time + TimeSpan(0, 0, fbDuration, 0);
 
   // Configura os alarmes
   myRTC.setAlarm1(alarm1Time, DS3231_A1_Minute);
@@ -171,41 +179,17 @@ void streamCallback(FirebaseStream data) {
   // true = on
   // false = off
   if (data.dataTypeEnum() == fb_esp_rtdb_data_type_json) {
-    Serial.println(">>> Recebido um objeto JSON para agendamento.");
+    FirebaseJson *json = data.to<FirebaseJson*>();
+    FirebaseJsonData result;
 
-    // Crie um objeto JSON para analisar os dados
-    FirebaseJson json;
-    json.setJsonData(data.stringData());
+    if (json->get(result, "year")) fbYear = result.intValue;
+    if (json->get(result, "month")) fbMonth = result.intValue;
+    if (json->get(result, "day")) fbDay = result.intValue;
+    if (json->get(result, "hour")) fbHour = result.intValue;
+    if (json->get(result, "minute")) fbMinute = result.intValue;
+    if (json->get(result, "second")) fbSecond = result.intValue;
 
-    int year, month, day, hour, minute, second;
-
-    // Use o método get para extrair os valores
-    // O valor é armazenado em uma FirebaseJsonData
-    FirebaseJsonData jsonData;
-        
-    json.get(jsonData, "year");
-    year = jsonData.intValue;
-    Serial.println("year = " + String(year));
-
-    json.get(jsonData, "month");
-    month = jsonData.intValue;
-    Serial.println("month = " + String(month));
-
-    json.get(jsonData, "day");
-    day = jsonData.intValue;
-    Serial.println("day = " + String(day));
-
-    json.get(jsonData, "hour");
-    hour = jsonData.intValue;
-    Serial.println("hour = " + String(hour));
-
-    json.get(jsonData, "minute");
-    minute = jsonData.intValue;
-    Serial.println("minute = " + String(minute));
-
-    json.get(jsonData, "second");
-    second = jsonData.intValue;
-    Serial.println("second = " + String(second));
+    scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond);
 
     // Chame vetor para agendar o alarme
   } else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean) {
@@ -237,28 +221,37 @@ void streamCallback(FirebaseStream data) {
 
     if (subKey == "year") {
         Serial.println(">>> Chave 'year' atualizada para: " + String(val));
+        fbYear = val;
         // int year = val;
     } else if (subKey == "month") {
         Serial.println(">>> Chave 'month' atualizada para: " + String(val));
+        fbMonth = val;
         // int month = val;
     } else if (subKey == "day") {
         Serial.println(">>> Chave 'day' atualizada para: " + String(val));
+        fbDay = val;
         // int day = val;
     } else if (subKey == "hour") {
         Serial.println(">>> Chave 'hour' atualizada para: " + String(val));
+        fbHour = val;
         // int hour = val;
     } else if (subKey == "minute") {
         Serial.println(">>> Chave 'minute' atualizada para: " + String(val));
+        fbMinute = val;
         // int minute = val;
     } else if (subKey == "second") {
         Serial.println(">>> Chave 'second' atualizada para: " + String(val));
+        fbSecond = val;
         // int second = val;
     } else {
         Serial.println(">>> Chave desconhecida '" + subKey + "' com valor: " + String(val));
     }
+    scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond);
   }
 
   //scheduleAlarm(vetor);
+
+
   Serial.println("====================");
   return;
 }
