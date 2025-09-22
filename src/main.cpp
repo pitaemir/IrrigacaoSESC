@@ -208,7 +208,6 @@ void streamCallback(FirebaseStream data) {
     Serial.println("second = " + String(second));
 
     // Chame vetor para agendar o alarme
-    vetor[]
   } else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean) {
     bool val = data.boolData();
 
