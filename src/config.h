@@ -1,11 +1,10 @@
 #pragma once
 
 // ===== WiFi =====
-#define WIFI_SSID "JR"
-#define WIFI_PASSWORD "22070000"
-
-//#define WIFI_SSID "LARM"
-//#define WIFI_PASSWORD "SenhaLARM"
+//#define WIFI_SSID "JR"
+//#define WIFI_PASSWORD "22070000"
+#define WIFI_SSID "LARM"
+#define WIFI_PASSWORD "LarmUfsc2022"
 
 // ===== Firebase =====
 #define API_KEY "AIzaSyA1LI1y7m9T-av1WW1sDQMSdqyaG6RtDFU"

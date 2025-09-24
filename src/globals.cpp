@@ -4,6 +4,7 @@ TaskHandle_t taskHandle1, taskHandle2, taskHandle3, taskHandle4;
 
 RTC_DS3231 myRTC;
 volatile bool alarmFiredFlag = false;
+volatile bool flowStateFlag = false; // variável para controlar a leitura do sensor de fluxo
 char diasDaSemana[7][12] = {"Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"};
 
 DateTime alarm1Time = DateTime(2025, 9, 19, 17, 54, 0);

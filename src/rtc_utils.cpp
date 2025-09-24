@@ -2,9 +2,12 @@
 #include "globals.h"
 #include "rtc_utils.h"
 #include "globals.h"
+#include "config.h"
+#include "valve.h"
 
 void pulseCounter() {
   pulseCount++;
+  Serial.println("Pulses: " + String(pulseCount));
 }
 
 void imprimirDataHora(DateTime momento) {
@@ -76,8 +79,15 @@ void scheduleAlarm(int year, int month, int day, int hour, int minute, int secon
   myRTC.setAlarm2(alarm2Time, DS3231_A2_Minute);
 
   Serial.println("\n--- Próximo ciclo agendado ---");
-  Serial.print("Próximo Alarme 1 (LIGA): ");
-  imprimirDataHora(alarm1Time);
-  Serial.print("Próximo Alarme 2 (DESLIGA): ");
-  imprimirDataHora(alarm2Time);
+  Serial.printf("Duração configurada: %d minutos\n", fbDuration);
+
+  Serial.printf("Ligar às: %02d:%02d:%02d em %02d/%02d/%04d\n",
+                alarm1Time.hour(), alarm1Time.minute(), alarm1Time.second(),
+                alarm1Time.day(), alarm1Time.month(), alarm1Time.year());
+
+  Serial.printf("Desligar às: %02d:%02d:%02d em %02d/%02d/%04d\n",
+                alarm2Time.hour(), alarm2Time.minute(), alarm2Time.second(),
+                alarm2Time.day(), alarm2Time.month(), alarm2Time.year());
+
+  Serial.println("-------------------------------------");
 }

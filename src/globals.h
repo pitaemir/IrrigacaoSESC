@@ -10,6 +10,7 @@ extern TaskHandle_t taskHandle1, taskHandle2, taskHandle3, taskHandle4;
 // RTC
 extern RTC_DS3231 myRTC;
 extern volatile bool alarmFiredFlag;
+extern volatile bool flowStateFlag;
 extern char diasDaSemana[7][12];
 extern DateTime alarm1Time, alarm2Time;
 

@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "rtc_utils.h"
 #include "config.h"
+#include "valve.h"
 
 void Task1(void *pvParameters) {
   Serial.println("Task1: Iniciada no Core " + String(xPortGetCoreID()));
@@ -15,6 +16,8 @@ void Task1(void *pvParameters) {
         if (myRTC.alarmFired(1)) {
           myRTC.clearAlarm(1);
           Serial.println(" - Alarm 1 cleared");
+          setValveState(true); // Abre a válvula
+          //digitalWrite(debugLedPin, HIGH);
           
           // Set Alarm 2
           if(!myRTC.setAlarm2(alarm2Time, DS3231_A2_Minute)) {  // this mode triggers the alarm when the minutes match
@@ -27,7 +30,8 @@ void Task1(void *pvParameters) {
         }else if (myRTC.alarmFired(2)){
           myRTC.clearAlarm(2);
           Serial.println(" - Alarm 2 cleared");
-          digitalWrite(debugLedPin, LOW);
+          setValveState(false); // Fecha a válvula
+          //digitalWrite(debugLedPin, LOW);
         }
         alarmFiredFlag = false;
       }
