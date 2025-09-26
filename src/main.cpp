@@ -22,7 +22,7 @@ void setup()
   pinMode(ClockInterruptPin, INPUT_PULLUP); // Configura o pino de interrupção como entrada com pull-up
 
   attachInterrupt(digitalPinToInterrupt(ClockInterruptPin), onAlarm, FALLING);
-  attachInterrupt(digitalPinToInterrupt(sensorPin), pulseCounter, FALLING);
+  attachInterrupt(digitalPinToInterrupt(sensorPin), pulseCounter, FALLING); // interrupcao externa. sempre que variar o pino D2, vai entrar aqui . 
 
   // WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
