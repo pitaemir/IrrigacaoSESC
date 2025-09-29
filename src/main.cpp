@@ -141,6 +141,8 @@ void loop()
       // Adiciona à quantidade total
       totalMilliLitres += flowMilliLitres;
 
+      sendSensorDataToFirebase(flowRate, totalMilliLitres);
+
       // Imprime os resultados
       Serial.print("Vazao: ");
       Serial.print(flowRate);

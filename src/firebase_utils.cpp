@@ -104,3 +104,26 @@ void streamTimeoutCallback(bool timeout)
     if (timeout)
         Serial.println("Stream timeout, reconectando...");
 }
+
+void sendSensorDataToFirebase(float flowRate, unsigned long totalMilliLitres) {
+    DateTime now = myRTC.now();
+  
+    FirebaseJson json;
+    json.set("flowRate", flowRate);
+    json.set("totalMillilitres", totalMilliLitres);
+    json.set("timestamp", now.unixtime()); // <<< Gera timestamp em segundos
+  
+    // Opcional: salva data/hora como strings separadas
+    json.set("year", now.year());
+    json.set("month", now.month());
+    json.set("day", now.day());
+    json.set("hour", now.hour());
+    json.set("minute", now.minute());
+    json.set("second", now.second());
+  
+    if (Firebase.RTDB.pushJSON(&fbdo, "/sensores/historico", &json)) {
+      Serial.println("Leitura enviada ao Firebase com timestamp!");
+    } else {
+      Serial.printf("Erro ao enviar: %s\n", fbdo.errorReason().c_str());
+    }
+  }
