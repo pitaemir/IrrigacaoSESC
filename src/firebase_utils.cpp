@@ -113,7 +113,7 @@ void sendSensorDataToFirebase(float flowRate, unsigned long totalMilliLitres) {
     json.set("totalMillilitres", totalMilliLitres);
     json.set("timestamp", now.unixtime()); // <<< Gera timestamp em segundos
   
-    // Opcional: salva data/hora como strings separadas
+    // salva data/hora como strings separadas
     json.set("year", now.year());
     json.set("month", now.month());
     json.set("day", now.day());
