@@ -20,8 +20,9 @@ extern FirebaseAuth auth;
 extern FirebaseConfig config;
 extern bool signupOK;
 extern String watchPath;
+extern String watchPath2;
 
-// Variáveis globais de horário do Firebase
+// Variáveis globais de horário e temperatura do Firebase
 extern int fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbDuration;
 
 // Sensor de fluxo

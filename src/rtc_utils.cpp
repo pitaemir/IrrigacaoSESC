@@ -58,20 +58,15 @@ void imprimirDataHora(DateTime momento)
   Serial.print(" / Temperatura: ");
   Serial.print(myRTC.getTemperature());
   Serial.println(" °C");
-  Serial.print("Vazao: ");
-  Serial.print(flowRate);
-  Serial.print(" L/min - ");
-  Serial.print("Quantidade de agua: ");
-  Serial.print(flowMilliLitres);
-  Serial.print(" mL/segundo - Total: ");
-  Serial.print(totalMilliLitres);
-  Serial.println(" mL");
+  Serial.println();
 }
 
 void onAlarm()
 {
   Serial.println("Alarm occurred!");
   alarmFiredFlag = true;
+  
+
 }
 
 void printDateTime(DateTime scheduledTime, Ds3231Alarm1Mode mode)

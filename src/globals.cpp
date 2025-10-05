@@ -15,6 +15,7 @@ FirebaseAuth auth;
 FirebaseConfig config;
 bool signupOK = false;
 String watchPath = "/test";
+String watchPath2 = "/test2";
 
 // Variáveis globais para armazenar a data/hora vinda do Firebase
 

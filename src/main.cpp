@@ -84,21 +84,25 @@ void setup()
   myRTC.writeSqwPinMode(DS3231_OFF);
   myRTC.disableAlarm(2);
 
-  // BME280
-  if (!bme.begin(0x76))
-  {
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1)
-      ;
-  }
-
   Serial.println("Setup concluído.");
+
+  void printLocalTime() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Falha ao obter a hora do ESP.");
+    return;
+  }
+  
+  Serial.print("Hora atual do ESP: ");
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+}
 }
 
 void loop()
 {
   // vTaskDelay(pdMS_TO_TICKS(5000));
-  printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
+  //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
+  float temperature = myRTC.getTemperature();
   imprimirDataHora(myRTC.now());
   if (alarmFiredFlag)
   {
@@ -107,17 +111,18 @@ void loop()
       myRTC.clearAlarm(1);
       Serial.println(" - Alarm 1 cleared");
       setValveState(true); // Abre a válvula
-      // printDateTime(myRTC.getAlarm2(), myRTC.getAlarm2Mode());
+      printDateTime(myRTC.getAlarm2(), myRTC.getAlarm2Mode());
     }
     else if (myRTC.alarmFired(2))
     {
       myRTC.clearAlarm(2);
       Serial.println(" - Alarm 2 cleared");
+      sendSensorDataToFirebase(flowRate, totalMilliLitres, temperature);
       setValveState(false); // Fecha a válvula
     }
     alarmFiredFlag = false;
   }
-  if (flowStateFlag == true)
+  if (flowStateFlag)
   {
     unsigned long currentTime;
     unsigned long elapsedTime;
@@ -141,7 +146,7 @@ void loop()
       // Adiciona à quantidade total
       totalMilliLitres += flowMilliLitres;
 
-      sendSensorDataToFirebase(flowRate, totalMilliLitres);
+      // Temperatura
 
       // Imprime os resultados
       Serial.print("Vazao: ");
@@ -154,7 +159,6 @@ void loop()
       Serial.println(" mL");
     }
   }
-
   // vTaskDelay(pdMS_TO_TICKS(5000));
   delay(5000);
 }
