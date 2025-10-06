@@ -26,6 +26,7 @@ int fbHour =        0;
 int fbMinute =      0;
 int fbSecond =      0;
 int fbDuration =    1; //duração em minutos
+int fbCycle =       1; // 1 para diario, 2 para semanal
 
 volatile unsigned int pulseCount =  0;         // Variável para contar pulsos
 float flowRate =                    0.0;       // Vazão em litros por minuto

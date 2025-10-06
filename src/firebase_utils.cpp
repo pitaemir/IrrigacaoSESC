@@ -28,8 +28,12 @@ void streamCallback(FirebaseStream data)
             fbMinute = result.intValue;
         if (json->get(result, "second"))
             fbSecond = result.intValue;
+        if (json->get(result, "cycle"))
+            fbCycle = result.intValue;
+        if (json->get(result, "duration"))
+            fbDuration = result.intValue;
 
-        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond); // Chama o vetor para agendar o alarme
+        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
     }
     else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean)
     {
@@ -88,12 +92,17 @@ void streamCallback(FirebaseStream data)
             fbSecond = val;
             // int second = val;
         }
+        else if (subKey == "cycle")
+        {
+            Serial.println(">>> Chave 'cycle' atualizada para: " + String(fbCycle));
+            fbCycle = val;
+        }
         else
         {
             Serial.println(">>> Chave desconhecida '" + subKey + "' com valor: " + String(val));
         }
 
-        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond);
+        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
     }
 
     Serial.println("====================");
@@ -105,21 +114,6 @@ void streamTimeoutCallback(bool timeout)
         Serial.println("Stream timeout, reconectando...");
 }
 
-//void sendSensorDataToFirebase(float flowRate, unsigned long totalMilliLitres, float temperature) {
-//  DateTime now = myRTC.now();
-//  FirebaseJson json;
-//  json.set("flowRate", flowRate);
-//  json.set("totalMilliLitres", totalMilliLitres);
-//  json.set("temperature", temperature);
-//  json.set("timestamp", now.unixtime());
-//    if (Firebase.RTDB.setJSON(&fbdo, "/test2/ultimaleitura", &json)) {
-//        Serial.println("Dados do sensor enviados para o Firebase com sucesso:");
-//        Serial.println("Timestamp: " + String(now.unixtime()));
-//    } else {
-//        Serial.println("Erro ao enviar dados do sensor para o Firebase:");
-//        Serial.println(fbdo.errorReason());
-//    }
-//}
 void sendTemperatureToFirebase(float temperature){
     DateTime now = myRTC.now();
     if (Firebase.RTDB.setFloat(&fbdo, "/test2/temperature", temperature)) {

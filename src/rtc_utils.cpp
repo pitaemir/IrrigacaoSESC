@@ -131,7 +131,7 @@ void printDateTime(DateTime scheduledTime, Ds3231Alarm2Mode mode)
   Serial.println("]");
 }
 
-void scheduleAlarm(int year, int month, int day, int hour, int minute, int second)
+void scheduleAlarm(int year, int month, int day, int hour, int minute, int second, int cycle)
 {
   alarm1Time = DateTime(year, month, day, hour, minute, second);
   alarm2Time = alarm1Time + TimeSpan(0, 0, fbDuration, 0);
@@ -150,4 +150,26 @@ void scheduleAlarm(int year, int month, int day, int hour, int minute, int secon
                 alarm2Time.day(), alarm2Time.month(), alarm2Time.year());
 
   Serial.println("-------------------------------------");
+
+  DateTime nextAlarm;
+
+  if (cycle == 1) {
+    // Diário → soma 1 dia
+    nextAlarm = alarm1Time + TimeSpan(1, 0, 0, 0);
+  } else if (cycle == 2) {
+    // Semanal → soma 7 dias
+    nextAlarm = alarm1Time + TimeSpan(7, 0, 0, 0);
+  } else {
+    // Caso inválido, padrão: 1 dia
+    nextAlarm = alarm1Time + TimeSpan(1, 0, 0, 0);
+  }
+
+  Serial.println("\n--- Próxima repetição calculada ---");
+  Serial.printf("Próximo acionamento em: %02d/%02d/%04d às %02d:%02d:%02d\n",
+                nextAlarm.day(), nextAlarm.month(), nextAlarm.year(),
+                nextAlarm.hour(), nextAlarm.minute(), nextAlarm.second());
+  Serial.println("-------------------------------------");
+
+  alarm1Time = nextAlarm;
+
 }

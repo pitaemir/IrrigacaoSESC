@@ -23,7 +23,7 @@ extern String watchPath;
 extern String watchPath2;
 
 // Variáveis globais de horário e temperatura do Firebase
-extern int fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbDuration;
+extern int fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbDuration, fbCycle;
 
 // Sensor de fluxo
 extern volatile unsigned int pulseCount;
