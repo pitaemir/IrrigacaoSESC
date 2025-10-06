@@ -105,18 +105,52 @@ void streamTimeoutCallback(bool timeout)
         Serial.println("Stream timeout, reconectando...");
 }
 
-void sendSensorDataToFirebase(float flowRate, unsigned long totalMilliLitres, float temperature) {
-  DateTime now = myRTC.now();
-  FirebaseJson json;
-  json.set("flowRate", flowRate);
-  json.set("totalMilliLitres", totalMilliLitres);
-  json.set("temperature", temperature);
-  json.set("timestamp", now.unixtime());
-    if (Firebase.RTDB.setJSON(&fbdo, "/test2/ultimaleitura", &json)) {
-        Serial.println("Dados do sensor enviados para o Firebase com sucesso:");
-        Serial.println("Timestamp: " + String(now.unixtime()));
-    } else {
-        Serial.println("Erro ao enviar dados do sensor para o Firebase:");
-        Serial.println(fbdo.errorReason());
+//void sendSensorDataToFirebase(float flowRate, unsigned long totalMilliLitres, float temperature) {
+//  DateTime now = myRTC.now();
+//  FirebaseJson json;
+//  json.set("flowRate", flowRate);
+//  json.set("totalMilliLitres", totalMilliLitres);
+//  json.set("temperature", temperature);
+//  json.set("timestamp", now.unixtime());
+//    if (Firebase.RTDB.setJSON(&fbdo, "/test2/ultimaleitura", &json)) {
+//        Serial.println("Dados do sensor enviados para o Firebase com sucesso:");
+//        Serial.println("Timestamp: " + String(now.unixtime()));
+//    } else {
+//        Serial.println("Erro ao enviar dados do sensor para o Firebase:");
+//        Serial.println(fbdo.errorReason());
+//    }
+//}
+void sendTemperatureToFirebase(float temperature){
+    DateTime now = myRTC.now();
+    if (Firebase.RTDB.setFloat(&fbdo, "/test2/temperature", temperature)) {
+            Serial.println("Temperatura enviada para o Firebase com sucesso:");
+            Serial.println("Timestamp: " + String(now.unixtime()));
+        } else {
+            Serial.println("Erro ao enviar temperatura para o Firebase:");
+            Serial.println(fbdo.errorReason());
+        }
+        delay(200);
     }
-}
+
+void sendFlowRateToFirebase(float flowRate){
+    DateTime now = myRTC.now();
+    if (Firebase.RTDB.setFloat(&fbdo, "/test2/flowRate", flowRate)) {
+            Serial.println("Vazão enviada para o Firebase com sucesso:");
+            Serial.println("Timestamp: " + String(now.unixtime()));
+        } else {
+            Serial.println("Erro ao enviar vazão para o Firebase:");
+            Serial.println(fbdo.errorReason());
+        }
+        delay(200);
+    }
+void sendTotalMilliLitresToFirebase(unsigned long totalMilliLitres){
+    DateTime now = myRTC.now();
+    if (Firebase.RTDB.setInt(&fbdo, "/test2/totalMilliLitres", totalMilliLitres)) {
+            Serial.println("Total de mililitros enviados para o Firebase com sucesso:");
+            Serial.println("Timestamp: " + String(now.unixtime()));
+        } else {
+            Serial.println("Erro ao enviar total de mililitros para o Firebase:");
+            Serial.println(fbdo.errorReason());
+        }
+        delay(200);
+    }

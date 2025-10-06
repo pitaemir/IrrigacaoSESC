@@ -86,16 +86,9 @@ void setup()
 
   Serial.println("Setup concluído.");
 
-  void printLocalTime() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("Falha ao obter a hora do ESP.");
-    return;
-  }
+
   
-  Serial.print("Hora atual do ESP: ");
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-}
+
 }
 
 void loop()
@@ -117,7 +110,9 @@ void loop()
     {
       myRTC.clearAlarm(2);
       Serial.println(" - Alarm 2 cleared");
-      sendSensorDataToFirebase(flowRate, totalMilliLitres, temperature);
+      sendTemperatureToFirebase(temperature);
+      sendFlowRateToFirebase(flowRate);
+      sendTotalMilliLitresToFirebase(totalMilliLitres);
       setValveState(false); // Fecha a válvula
     }
     alarmFiredFlag = false;
