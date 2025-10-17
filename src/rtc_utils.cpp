@@ -5,6 +5,7 @@
 #include "config.h"
 #include "valve.h"
 
+
 void pulseCounter()
 {
   pulseCount++;
@@ -65,8 +66,6 @@ void onAlarm()
 {
   Serial.println("Alarm occurred!");
   alarmFiredFlag = true;
-  
-
 }
 
 void printDateTime(DateTime scheduledTime, Ds3231Alarm1Mode mode)
@@ -171,5 +170,7 @@ void scheduleAlarm(int year, int month, int day, int hour, int minute, int secon
   Serial.println("-------------------------------------");
 
   alarm1Time = nextAlarm;
+
+  return;
 
 }
