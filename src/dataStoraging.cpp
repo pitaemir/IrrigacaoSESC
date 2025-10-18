@@ -14,19 +14,22 @@ const char* CONFIG_FILE = "/config.json";
  * @return true se os dados foram salvos com sucesso, false caso contrário.
  */
 
-bool storeConfigurationData(int fbYear, int fbMonth, int fbDay, int fbHour, int fbMinute, int fbSecond, int fbCycle){
+bool storeConfigurationData(int fbYear, int fbMonth, int fbDay, int fbHour, int fbMinute, int fbSecond, int fbCycle, int fbDuration){
     // Implementação da função para armazenar os dados de configuração no SPIFFS
     // Retorna true se o armazenamento for bem-sucedido, false caso contrário
 
     // Exemplo de implementação (substitua pelo código real de armazenamento):
     Serial.println("Armazenando dados de configuração:");
-    Serial.print("Year: "); Serial.println(fbYear);
+/*     Serial.print("Year: "); Serial.println(fbYear);
     Serial.print("Month: "); Serial.println(fbMonth);
     Serial.print("Day: "); Serial.println(fbDay);
     Serial.print("Hour: "); Serial.println(fbHour);
     Serial.print("Minute: "); Serial.println(fbMinute);
     Serial.print("Second: "); Serial.println(fbSecond);
-    Serial.print("Cycle: "); Serial.println(fbCycle);
+    Serial.print("Cycle: "); Serial.println(fbCycle); */
+    Serial.printf("Data: %02d/%02d/%d\n", fbDay, fbMonth, fbYear);
+    Serial.printf("Hora: %02d:%02d:%02d\n", fbHour, fbMinute, fbSecond);
+    Serial.printf("Ciclo: %d, Duração: %d\n", fbCycle, fbDuration);
 
     // Aqui você adicionaria o código para realmente salvar os dados no SPIFFS
     // 1. Criar um objeto JSON para armazenar os dados.

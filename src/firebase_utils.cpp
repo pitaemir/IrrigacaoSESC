@@ -5,143 +5,129 @@
 #include "config.h"
 #include "dataStoraging.h"
 
-void streamCallback(FirebaseStream data)
-{
-    Serial.println("=== STREAM EVENT ===");
-    Serial.printf("Stream Path: %s\n", data.streamPath().c_str());
-    Serial.printf("Type: %s\n", data.dataType().c_str());
-    Serial.printf("Data: %s\n", data.stringData().c_str());
+void fetchConfigurationFromFirebase() {
+    Serial.println("\nBuscando dados de configuração do Firebase...");
 
-    if (data.dataTypeEnum() == fb_esp_rtdb_data_type_json)
-    {
-        FirebaseJson json = data.to<FirebaseJson>();
-        FirebaseJsonData result;
+    // 1. Faz a requisição GET para o caminho 'watchPath'
+    if (Firebase.RTDB.getJSON(&fbdo, watchPath.c_str())) {
+        // Sucesso na requisição!
 
-        // Usa o operador '.' para acessar os métodos, pois 'json' é um objeto, não um ponteiro.
-        if (json.get(result, "year"))
-            fbYear = result.intValue;
-        if (json.get(result, "month"))
-            fbMonth = result.intValue;
-        if (json.get(result, "day"))
-            fbDay = result.intValue;
-        if (json.get(result, "hour"))
-            fbHour = result.intValue;
-        if (json.get(result, "minute"))
-            fbMinute = result.intValue;
-        if (json.get(result, "second"))
-            fbSecond = result.intValue;
-        if (json.get(result, "cycle"))
-            fbCycle = result.intValue;
-        if (json.get(result, "duration"))
-            fbDuration = result.intValue;
+        // 2. Verifica se o tipo de dado recebido é um JSON
+        if (fbdo.dataTypeEnum() == fb_esp_rtdb_data_type_json) {
+            FirebaseJson json = fbdo.to<FirebaseJson>();
+            FirebaseJsonData result;
 
-        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
+            // 3. Extrai os valores do JSON (lógica que você já tinha)
+            // Esta parte se torna a única forma de receber os dados, simplificando tudo.
+            if (json.get(result, "year"))
+                fbYear = result.intValue;
+            if (json.get(result, "month"))
+                fbMonth = result.intValue;
+            if (json.get(result, "day"))
+                fbDay = result.intValue;
+            if (json.get(result, "hour"))
+                fbHour = result.intValue;
+            if (json.get(result, "minute"))
+                fbMinute = result.intValue;
+            if (json.get(result, "second"))
+                fbSecond = result.intValue;
+            if (json.get(result, "cycle"))
+                fbCycle = result.intValue;
+            if (json.get(result, "duration"))
+                fbDuration = result.intValue;
+
+            Serial.println("Dados recebidos e processados com sucesso:");
+            Serial.printf("Data: %02d/%02d/%d\n", fbDay, fbMonth, fbYear);
+            Serial.printf("Hora: %02d:%02d:%02d\n", fbHour, fbMinute, fbSecond);
+            Serial.printf("Ciclo: %d, Duração: %d\n", fbCycle, fbDuration);
+            
+            // 4. Aciona suas lógicas de negócio
+            //scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle);
+            //storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle, fbDuration);
+
+        } else {
+            Serial.println("Erro: Os dados recebidos não estão no formato JSON.");
+            Serial.printf("Tipo recebido: %s\n", fbdo.dataType().c_str());
+        }
+
+    } else {
+        // Falha na requisição
+        Serial.println("Erro ao buscar dados do Firebase.");
+        Serial.printf("Razão: %s\n", fbdo.errorReason().c_str());
     }
-    else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_boolean)
-    {
-        bool val = data.boolData();
-        setValveState(val);
-    }
-    else if (data.dataTypeEnum() == fb_esp_rtdb_data_type_integer)
-    {
-        int val = data.intData();
-        String path = data.dataPath();
-        Serial.println(">>> Recebido um valor inteiro!");
-        // Tratamento especifico para o caso de um valor inteiro
-        if (path == "/test")
-        {
-            Serial.println(">>> Alerta: O valor '" + String(val) + "' foi recebido diretamente no caminho '/test'.");
-            Serial.println(">>> Isso pode ter sobrescrito todo o objeto JSON, apagando as chaves internas (year, month, etc.).");
-            return; // Interrompe a função para evitar processamento incorreto
-        }
-
-        String subKey = path.substring(path.lastIndexOf('/') + 1);
-        Serial.println(">>> Sub-chave identificada: '" + subKey + "'");
-
-        if (subKey == "year")
-        {
-            Serial.println(">>> Chave 'year' atualizada para: " + String(val));
-            fbYear = val;
-        }
-        else if (subKey == "month")
-        {
-            Serial.println(">>> Chave 'month' atualizada para: " + String(val));
-            fbMonth = val;
-        }
-        else if (subKey == "day")
-        {
-            Serial.println(">>> Chave 'day' atualizada para: " + String(val));
-            fbDay = val;
-        }
-        else if (subKey == "hour")
-        {
-            Serial.println(">>> Chave 'hour' atualizada para: " + String(val));
-            fbHour = val;
-        }
-        else if (subKey == "minute")
-        {
-            Serial.println(">>> Chave 'minute' atualizada para: " + String(val));
-            fbMinute = val;
-        }
-        else if (subKey == "second")
-        {
-            Serial.println(">>> Chave 'second' atualizada para: " + String(val));
-            fbSecond = val;
-        }
-        else if (subKey == "cycle")
-        {
-            Serial.println(">>> Chave 'cycle' atualizada para: " + String(fbCycle));
-            fbCycle = val;
-        }
-        else
-        {
-            Serial.println(">>> Chave desconhecida '" + subKey + "' com valor: " + String(val));
-        }
-
-        scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
-        storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Salva os dados atualizados no SPIFFS
-    }
-
-    Serial.println("====================");
 }
 
-void streamTimeoutCallback(bool timeout)
-{
-    if (timeout)
-        Serial.println("Stream timeout, reconectando...");
+/**
+ * @brief Envia dados de sensores para o nó /test2 no Firebase RTDB.
+ * @param temperature A temperatura atual a ser enviada.
+ * @param flowRate A taxa de fluxo atual a ser enviada.
+ * @param totalML O volume total em mililitros a ser enviado.
+ */
+void sendSensorDataToFirebase(float temperature, float flowRate, long totalML) {
+    // 1. Define o caminho exato para onde os dados serão enviados.
+    // Neste caso, diretamente para o nó "test2".
+    String path = "/test2";
+
+    // 2. Cria o objeto FirebaseJson para montar a carga de dados.
+    FirebaseJson json;
+    
+    // 3. Adiciona os dados ao objeto JSON.
+    // As chaves ("temperature", "flowRate", etc.) devem corresponder exatamente
+    // às chaves que você espera ver no Firebase.
+    // Use setFloat para números com casas decimais.
+    json.set("temperature", temperature);
+    json.set("flowRate", flowRate);
+    json.set("totalMilliLitres", totalML);
+
+    Serial.printf("Enviando dados para Firebase em %s ...\n", path.c_str());
+    // Imprime o JSON que será enviado para facilitar a depuração.
+    json.toString(Serial, true); // O 'true' formata a saída para ser legível.
+    Serial.println();
+
+    // 4. Envia o objeto JSON para o caminho especificado.
+    // A função setJSON sobrescreve todos os dados no caminho 'path'.
+    if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+        Serial.println(">>> Dados enviados com sucesso!");
+    } else {
+        Serial.println(">>> Erro ao enviar dados.");
+        Serial.printf("RAZÃO: %s\n", fbdo.errorReason().c_str());
+    }
 }
 
-void sendTemperatureToFirebase(float temperature){
-    DateTime now = myRTC.now();
-    if (Firebase.RTDB.setFloat(&fbdo, "/test2/temperature", temperature)) {
-            Serial.println("Temperatura enviada para o Firebase com sucesso:");
-            Serial.println("Timestamp: " + String(now.unixtime()));
-        } else {
-            Serial.println("Erro ao enviar temperatura para o Firebase:");
-            Serial.println(fbdo.errorReason());
-        }
-        delay(200);
-    }
+/**
+ * @brief Adiciona um novo registro de leitura de sensores no Firebase RTDB.
+ * Usa pushJSON para criar uma entrada única em um nó de histórico.
+ * @param temperature A temperatura atual a ser enviada.
+ * @param flowRate A taxa de fluxo atual a ser enviada.
+ * @param totalML O volume total em mililitros a ser enviado.
+ */
+void logSensorDataToFirebase(float temperature, float flowRate, long totalML) {
+    // 1. Define o caminho do NÓ PAI onde a lista de leituras será armazenada.
+    String path = "/historico_sensores";
 
-void sendFlowRateToFirebase(float flowRate){
-    DateTime now = myRTC.now();
-    if (Firebase.RTDB.setFloat(&fbdo, "/test2/flowRate", flowRate)) {
-            Serial.println("Vazão enviada para o Firebase com sucesso:");
-            Serial.println("Timestamp: " + String(now.unixtime()));
-        } else {
-            Serial.println("Erro ao enviar vazão para o Firebase:");
-            Serial.println(fbdo.errorReason());
-        }
-        delay(200);
+    // 2. Cria o objeto JSON para a nova leitura.
+    FirebaseJson json;
+    
+    // 3. Obtém o timestamp atual.
+    // time(nullptr) retorna o número de segundos desde 01/01/1970 (Unix Timestamp).
+    float now = 17;
+    
+    // 4. Adiciona todos os dados ao objeto, incluindo o timestamp.
+    json.set("timestamp", now);
+    json.set("temperature", temperature);
+    json.set("flowRate", flowRate);
+    json.set("totalMilliLitres", totalML);
+
+    Serial.printf("Adicionando novo registro em %s ...\n", path.c_str());
+
+    // 5. Usa pushJSON para adicionar o novo registro ao Firebase.
+    // A biblioteca cuidará de gerar o ID único.
+    if (Firebase.RTDB.pushJSON(&fbdo, path.c_str(), &json)) {
+        Serial.println(">>> Registro de histórico enviado com sucesso!");
+        // Opcional: Você pode obter o ID único que foi gerado
+        // Serial.printf("ID do novo registro: %s\n", fbdo.pushName().c_str());
+    } else {
+        Serial.println(">>> Erro ao enviar registro de histórico.");
+        Serial.printf("RAZÃO: %s\n", fbdo.errorReason().c_str());
     }
-void sendTotalMilliLitresToFirebase(unsigned long totalMilliLitres){
-    DateTime now = myRTC.now();
-    if (Firebase.RTDB.setInt(&fbdo, "/test2/totalMilliLitres", totalMilliLitres)) {
-            Serial.println("Total de mililitros enviados para o Firebase com sucesso:");
-            Serial.println("Timestamp: " + String(now.unixtime()));
-        } else {
-            Serial.println("Erro ao enviar total de mililitros para o Firebase:");
-            Serial.println(fbdo.errorReason());
-        }
-        delay(200);
-    }
+}
