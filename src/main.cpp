@@ -9,6 +9,7 @@
 #include <addons/TokenHelper.h>
 #include <addons/RTDBHelper.h>
 #include "valve.h"
+#include "dataStoraging.h"
 
 void setup()
 {
@@ -36,7 +37,7 @@ void setup()
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
 
-  // Firebase
+  /* // Firebase
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
@@ -58,44 +59,45 @@ void setup()
   {
     Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeoutCallback);
     Serial.println("Ouvindo mudanças em " + watchPath);
-  }
+  } */
 
   // RTC
-  if (!myRTC.begin())
-  {
+  if (!myRTC.begin()){
     Serial.println("RTC não encontrado!");
     Serial.flush();
-    while (1)
-      delay(10);
-  }
-
-  myRTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-  // Se perdeu energia, ajusta a hora atual para a hora da compilação
-  if (myRTC.lostPower())
-  {
-    Serial.println("RTC perdeu a hora. Ajustando...");
+    /* while (1)
+      delay(10); */
+  } else{
     myRTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
+    // Se perdeu energia, ajusta a hora atual para a hora da compilação
+    if (myRTC.lostPower()){
+      Serial.println("RTC perdeu a hora. Ajustando...");
+      myRTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+
+    myRTC.disable32K();
+    myRTC.clearAlarm(1);
+    myRTC.clearAlarm(2);
+    myRTC.writeSqwPinMode(DS3231_OFF);
+    myRTC.disableAlarm(2);
   }
 
-  myRTC.disable32K();
-  myRTC.clearAlarm(1);
-  myRTC.clearAlarm(2);
-  myRTC.writeSqwPinMode(DS3231_OFF);
-  myRTC.disableAlarm(2);
+  // Inicializa o sistema de arquivos SPIFFS.
+    // O parâmetro 'true' formata o SPIFFS se a montagem falhar (útil na primeira execução).
+  if (!SPIFFS.begin(true)) {
+      Serial.println("Erro: Falha ao montar o sistema de arquivos SPIFFS.");
+      return; // Interrompe a execução se não for possível montar o SPIFFS.
+  }
 
   Serial.println("Setup concluído.");
-
-
-  
-
 }
 
 void loop()
 {
   // vTaskDelay(pdMS_TO_TICKS(5000));
   //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
-  float temperature = myRTC.getTemperature();
+  /* float temperature = myRTC.getTemperature();
   imprimirDataHora(myRTC.now());
   if (alarmFiredFlag)
   {
@@ -153,7 +155,7 @@ void loop()
       Serial.print(totalMilliLitres);
       Serial.println(" mL");
     }
-  }
+  } */
   // vTaskDelay(pdMS_TO_TICKS(5000));
   delay(5000);
 }

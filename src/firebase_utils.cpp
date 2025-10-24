@@ -3,6 +3,7 @@
 #include "rtc_utils.h"
 #include "valve.h"
 #include "config.h"
+#include "dataStoraging.h"
 
 void streamCallback(FirebaseStream data)
 {
@@ -13,24 +14,25 @@ void streamCallback(FirebaseStream data)
 
     if (data.dataTypeEnum() == fb_esp_rtdb_data_type_json)
     {
-        FirebaseJson *json = data.to<FirebaseJson *>();
+        FirebaseJson json = data.to<FirebaseJson>();
         FirebaseJsonData result;
 
-        if (json->get(result, "year"))
+        // Usa o operador '.' para acessar os métodos, pois 'json' é um objeto, não um ponteiro.
+        if (json.get(result, "year"))
             fbYear = result.intValue;
-        if (json->get(result, "month"))
+        if (json.get(result, "month"))
             fbMonth = result.intValue;
-        if (json->get(result, "day"))
+        if (json.get(result, "day"))
             fbDay = result.intValue;
-        if (json->get(result, "hour"))
+        if (json.get(result, "hour"))
             fbHour = result.intValue;
-        if (json->get(result, "minute"))
+        if (json.get(result, "minute"))
             fbMinute = result.intValue;
-        if (json->get(result, "second"))
+        if (json.get(result, "second"))
             fbSecond = result.intValue;
-        if (json->get(result, "cycle"))
+        if (json.get(result, "cycle"))
             fbCycle = result.intValue;
-        if (json->get(result, "duration"))
+        if (json.get(result, "duration"))
             fbDuration = result.intValue;
 
         scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
@@ -60,37 +62,31 @@ void streamCallback(FirebaseStream data)
         {
             Serial.println(">>> Chave 'year' atualizada para: " + String(val));
             fbYear = val;
-            // int year = val;
         }
         else if (subKey == "month")
         {
             Serial.println(">>> Chave 'month' atualizada para: " + String(val));
             fbMonth = val;
-            // int month = val;
         }
         else if (subKey == "day")
         {
             Serial.println(">>> Chave 'day' atualizada para: " + String(val));
             fbDay = val;
-            // int day = val;
         }
         else if (subKey == "hour")
         {
             Serial.println(">>> Chave 'hour' atualizada para: " + String(val));
             fbHour = val;
-            // int hour = val;
         }
         else if (subKey == "minute")
         {
             Serial.println(">>> Chave 'minute' atualizada para: " + String(val));
             fbMinute = val;
-            // int minute = val;
         }
         else if (subKey == "second")
         {
             Serial.println(">>> Chave 'second' atualizada para: " + String(val));
             fbSecond = val;
-            // int second = val;
         }
         else if (subKey == "cycle")
         {
@@ -103,6 +99,7 @@ void streamCallback(FirebaseStream data)
         }
 
         scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Chama o vetor para agendar o alarme
+        storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle); // Salva os dados atualizados no SPIFFS
     }
 
     Serial.println("====================");
