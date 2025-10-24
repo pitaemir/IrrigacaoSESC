@@ -10,9 +10,10 @@
 #include <addons/RTDBHelper.h>
 #include "valve.h"
 #include "dataStoraging.h"
+#include "sensors.h"
 
 const unsigned long FETCH_INTERVAL_MS = 30 * 1000;
-const unsigned long PRINT_INTERVAL_MS = 20 * 1000;
+const unsigned long PRINT_INTERVAL_MS = 5 * 1000;
 const unsigned long SEND_INTERVAL_MS = 45 * 1000;
 
 unsigned long lastFetchTime = 0;
@@ -111,22 +112,27 @@ void loop()
 
   if (millis() - lastFetchTime >= FETCH_INTERVAL_MS) {
     lastFetchTime = millis();
-    fetchConfigurationFromFirebase();
+    // fetchConfigurationFromFirebase();
   } 
   
   if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
     lastPrintTime = millis();
     loadAndPrintConfiguration();
+    float DHTtemp = readDHTSensor();
+    float flowData[2] = {0, 0};
+    readFlowRateSensor(flowData);
+    logSensorDataToFirebase(DHTtemp, flowData[0], flowData[1]);
+  
   }
   
-  if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
-    lastSendTime = millis();
-    float currentTemp, currentFlow;
-    long currentTotalML;
-    readSensors(currentTemp, currentFlow, currentTotalML);
-    //sendSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
-    logSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
-  }
+  // if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
+  //   lastSendTime = millis();
+  //   float currentTemp, currentFlow;
+  //   long currentTotalML;
+  //   readSensors(currentTemp, currentFlow, currentTotalML);
+  //   //sendSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
+  //   logSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
+  // }
 
   // vTaskDelay(pdMS_TO_TICKS(5000));
   //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());

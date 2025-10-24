@@ -4,6 +4,8 @@
 #include <Adafruit_BME280.h>
 #include <Firebase_ESP_Client.h>
 #include <Preferences.h>
+#include "DHT.h"
+#include "config.h"
 
 extern TaskHandle_t taskHandle1, taskHandle2, taskHandle3, taskHandle4;
 
@@ -31,6 +33,8 @@ extern float flowRate;
 extern unsigned int flowMilliLitres;
 extern unsigned long totalMilliLitres;
 extern unsigned long oldTime;
+
+//DHT
 
 // BME
 extern Adafruit_BME280 bme;

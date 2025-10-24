@@ -7,19 +7,19 @@
     <title>Painel de Dados Firebase</title>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
     <h1>Painel de Dados Firebase</h1>
     <div class="card">
-        <h3>Temperatura</h3>
-        <div id="temperature">-- °C</div>
-    </div>
-    <div class="card">
-        <h3>Umidade</h3>
-        <div id="umid" class="valor">-- %</div>
-    </div>
+        <canvas id="graficoTemp"></canvas>
+      </div>
+      <div class="card">
+        <canvas id="graficoFlow"></canvas>
+      </div>
+      <script src="main.js"></script>
     <script src="main.js"></script>
 </body>
 

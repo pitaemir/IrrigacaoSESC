@@ -6,33 +6,6 @@
 #include "valve.h"
 
 
-void pulseCounter()
-{
-  pulseCount++;
-  // Serial.println("Pulses: " + String(pulseCount));
-  unsigned long currentTime;
-  unsigned long elapsedTime;
-
-  // digitalWrite(debugLedPin2, !digitalRead(debugLedPin2));
-  currentTime = millis();
-  elapsedTime = currentTime - oldTime;
-
-  if (elapsedTime > 5000)
-  {
-    // Calcula a vazão
-    flowRate = (1000.0 / (elapsedTime)) * pulseCount;
-
-    // Resetar contadores
-    pulseCount = 0;
-    oldTime = currentTime;
-
-    // Calcula a quantidade de água passada
-    flowMilliLitres = (flowRate / 60) * 1000;
-
-    // Adiciona à quantidade total
-    totalMilliLitres += flowMilliLitres;
-  }
-}
 
 void imprimirDataHora(DateTime momento)
 {

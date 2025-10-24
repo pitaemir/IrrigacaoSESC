@@ -16,39 +16,15 @@ body {
     display: inline-block;
     background: #fff;
     border-radius: 15px;
-    padding: 20px 40px;
+    padding: 20px;
     margin: 15px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-width: 200px;
+    width: 90%;
+    max-width: 600px;
   }
   
-  .valor {
-    font-size: 2em;
-    font-weight: bold;
-    margin-top: 10px;
-  }
-  
-  button {
-    background: #0077cc;
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-size: 1em;
-    cursor: pointer;
-    margin-top: 15px;
-    transition: background 0.2s;
-  }
-  
-  button:hover {
-    background: #005fa3;
-  }
-  
-  button.off {
-    background: #888;
-  }
-  
-  button.off:hover {
-    background: #666;
+  canvas {
+    width: 100% !important;
+    height: 300px !important;
   }
   
