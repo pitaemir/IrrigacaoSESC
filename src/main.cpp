@@ -11,6 +11,27 @@
 #include "valve.h"
 #include "dataStoraging.h"
 
+const unsigned long FETCH_INTERVAL_MS = 30 * 1000;
+const unsigned long PRINT_INTERVAL_MS = 20 * 1000;
+const unsigned long SEND_INTERVAL_MS = 45 * 1000;
+
+unsigned long lastFetchTime = 0;
+unsigned long lastPrintTime = 0;
+unsigned long lastSendTime = 0;
+
+void readSensors(float &temp, float &flow, long &total) {
+    // Simulação: gera valores aleatórios para demonstrar.
+    temp = 20.0 + (random(0, 500) / 100.0); // Temperatura entre 20.0 e 25.0
+    flow = random(0, 150) / 10.0;           // Fluxo entre 0.0 e 15.0
+
+    // Para o total, vamos apenas incrementá-lo para simular acúmulo.
+    static long accumulatedML = 0;
+    if (flow > 0) {
+        accumulatedML += (long)flow * 10; // Simula um acúmulo
+    }
+    total = accumulatedML;
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -37,29 +58,21 @@ void setup()
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
 
-  /* // Firebase
+  // Firebase
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
-  if (Firebase.signUp(&config, &auth, "", ""))
-    signupOK = true;
-  else
-    Serial.printf("signUp failed: %s\n", config.signer.signupError.message.c_str());
+  if (Firebase.signUp(&config, &auth, "", "")) {
+      signupOK = true;
+  } else {
+      Serial.printf("signUp failed: %s\n", config.signer.signupError.message.c_str());
+  }
 
   config.token_status_callback = tokenStatusCallback;
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 
-  // Inicia stream para monitorar alterações no caminho
-  if (!Firebase.RTDB.beginStream(&fbdo, watchPath.c_str()))
-  {
-    Serial.printf("beginStream failed: %s\n", fbdo.errorReason().c_str());
-  }
-  else
-  {
-    Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeoutCallback);
-    Serial.println("Ouvindo mudanças em " + watchPath);
-  } */
+  Serial.println("Firebase inicializado. O dispositivo buscará os dados periodicamente.");
 
   // RTC
   if (!myRTC.begin()){
@@ -95,6 +108,26 @@ void setup()
 
 void loop()
 {
+
+  if (millis() - lastFetchTime >= FETCH_INTERVAL_MS) {
+    lastFetchTime = millis();
+    fetchConfigurationFromFirebase();
+  } 
+  
+  if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
+    lastPrintTime = millis();
+    loadAndPrintConfiguration();
+  }
+  
+  if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
+    lastSendTime = millis();
+    float currentTemp, currentFlow;
+    long currentTotalML;
+    readSensors(currentTemp, currentFlow, currentTotalML);
+    //sendSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
+    logSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
+  }
+
   // vTaskDelay(pdMS_TO_TICKS(5000));
   //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
   /* float temperature = myRTC.getTemperature();
@@ -157,5 +190,5 @@ void loop()
     }
   } */
   // vTaskDelay(pdMS_TO_TICKS(5000));
-  delay(5000);
+  //delay(5000);
 }
