@@ -43,7 +43,7 @@ void fetchConfigurationFromFirebase() {
             
             // 4. Aciona suas lógicas de negócio
             //scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle);
-            //storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle, fbDuration);
+            //storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle, fbDuration); // aqui
 
         } else {
             Serial.println("Erro: Os dados recebidos não estão no formato JSON.");
