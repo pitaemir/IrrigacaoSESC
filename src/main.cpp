@@ -12,7 +12,7 @@
 #include "dataStoraging.h"
 #include "sensors.h"
 
-const unsigned long FETCH_INTERVAL_MS = 30 * 1000;
+const unsigned long FETCH_INTERVAL_MS = 90 * 1000;
 const unsigned long PRINT_INTERVAL_MS = 5 * 1000;
 const unsigned long SEND_INTERVAL_MS = 45 * 1000;
 
@@ -73,8 +73,6 @@ void setup()
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 
-  Serial.println("Firebase inicializado. O dispositivo buscará os dados periodicamente.");
-
   // RTC
   if (!myRTC.begin()){
     Serial.println("RTC não encontrado!");
@@ -98,10 +96,10 @@ void setup()
   }
 
   // Inicializa o sistema de arquivos SPIFFS.
-    // O parâmetro 'true' formata o SPIFFS se a montagem falhar (útil na primeira execução).
+  // O parâmetro 'true' formata o SPIFFS se a montagem falhar (útil na primeira execução).
   if (!SPIFFS.begin(true)) {
       Serial.println("Erro: Falha ao montar o sistema de arquivos SPIFFS.");
-      return; // Interrompe a execução se não for possível montar o SPIFFS.
+      return;
   }
 
   Serial.println("Setup concluído.");
@@ -112,8 +110,8 @@ void loop()
 
   if (millis() - lastFetchTime >= FETCH_INTERVAL_MS) {
     lastFetchTime = millis();
-    // fetchConfigurationFromFirebase();
-  } 
+    fetchConfigurationFromFirebase(); // Obtem as configuracoes e ja atualiza na memoria Flash do ESP32
+  }
   
   if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
     lastPrintTime = millis();
@@ -122,7 +120,6 @@ void loop()
     float flowData[2] = {0, 0};
     readFlowRateSensor(flowData);
     logSensorDataToFirebase(DHTtemp, flowData[0], flowData[1]);
-  
   }
   
   // if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
@@ -134,9 +131,8 @@ void loop()
   //   logSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
   // }
 
-  // vTaskDelay(pdMS_TO_TICKS(5000));
   //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
-  /* float temperature = myRTC.getTemperature();
+  /* float RTCtemp = myRTC.getTemperature();
   imprimirDataHora(myRTC.now());
   if (alarmFiredFlag)
   {
