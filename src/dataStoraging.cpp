@@ -44,6 +44,7 @@ bool storeConfigurationData(int fbYear, int fbMonth, int fbDay, int fbHour, int 
     doc["minute"] = fbMinute;
     doc["second"] = fbSecond;
     doc["cycle"]  = fbCycle;
+    doc["duration"] = fbDuration; // se quiser adicionar isso ao JSON futuramente
 
     // 2. Abrir o arquivo no SPIFFS em modo de escrita ('w').
     // Se o arquivo não existir, ele será criado. Se existir, será sobrescrito.
@@ -86,4 +87,51 @@ void loadAndPrintConfiguration() {
     }
     Serial.println("\n------------------------------------------\n");
     configFile.close();
+}
+
+
+/**
+ * @brief Lê o arquivo de configuração armazenado em SPIFFS e retorna um struct com os valores.
+ * @return ConfigData contendo os valores lidos. Caso haja erro, retorna com -1 em todos os campos.
+ */
+ConfigData readConfigurationData() {
+    ConfigData config = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+    if (!SPIFFS.begin(true)) {
+        Serial.println("Erro ao montar SPIFFS.");
+        return config;
+    }
+
+    File configFile = SPIFFS.open(CONFIG_FILE, "r");
+    if (!configFile) {
+        Serial.println("Erro: Arquivo de configuração não encontrado.");
+        return config;
+    }
+
+    StaticJsonDocument<256> doc;
+    DeserializationError error = deserializeJson(doc, configFile);
+    configFile.close();
+
+    if (error) {
+        Serial.print("Erro ao ler JSON: ");
+        Serial.println(error.c_str());
+        return config;
+    }
+
+    // Atribui os valores lidos
+    config.year     = doc["year"]   | -1;
+    config.month    = doc["month"]  | -1;
+    config.day      = doc["day"]    | -1;
+    config.hour     = doc["hour"]   | -1;
+    config.minute   = doc["minute"] | -1;
+    config.second   = doc["second"] | -1;
+    config.cycle    = doc["cycle"]  | -1;
+    config.duration = doc["duration"] | -1;  // se quiser adicionar isso ao JSON futuramente
+
+    Serial.println("Configuração carregada com sucesso!");
+    Serial.printf("Data: %02d/%02d/%04d\n", config.day, config.month, config.year);
+    Serial.printf("Hora: %02d:%02d:%02d\n", config.hour, config.minute, config.second);
+    Serial.printf("Ciclo: %d, Duração: %d\n", config.cycle, config.duration);
+
+    return config;
 }

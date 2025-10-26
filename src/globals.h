@@ -33,6 +33,22 @@ extern float flowRate;
 extern unsigned int flowMilliLitres;
 extern unsigned long totalMilliLitres;
 extern unsigned long oldTime;
+extern float DHTtemp;
+extern float flowData[2];
+extern float RTCtemp;
+extern float avg_temp;
+extern struct ConfigData {
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    int cycle;
+    int duration;
+} configData;
+extern bool dataReadyToSend;
+extern ConfigData alarmTime;
 
 //DHT
 

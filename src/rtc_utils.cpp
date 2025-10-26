@@ -1,7 +1,6 @@
 #include "rtc_utils.h"
 #include "globals.h"
 #include "rtc_utils.h"
-#include "globals.h"
 #include "config.h"
 #include "valve.h"
 
@@ -103,15 +102,15 @@ void printDateTime(DateTime scheduledTime, Ds3231Alarm2Mode mode)
   Serial.println("]");
 }
 
-void scheduleAlarm(int year, int month, int day, int hour, int minute, int second, int cycle)
+void scheduleAlarm(int year, int month, int day, int hour, int minute, int second, int cycle, int duration)
 {
   alarm1Time = DateTime(year, month, day, hour, minute, second);
-  alarm2Time = alarm1Time + TimeSpan(0, 0, fbDuration, 0);
+  alarm2Time = alarm1Time + TimeSpan(0, 0, duration, 0);
   myRTC.setAlarm1(alarm1Time, DS3231_A1_Minute);
   myRTC.setAlarm2(alarm2Time, DS3231_A2_Minute);
 
   Serial.println("\n--- Próximo ciclo agendado ---");
-  Serial.printf("Duração configurada: %d minutos\n", fbDuration);
+  Serial.printf("Duração configurada: %d minutos\n", duration);
 
   Serial.printf("Ligar às: %02d:%02d:%02d em %02d/%02d/%04d\n",
                 alarm1Time.hour(), alarm1Time.minute(), alarm1Time.second(),

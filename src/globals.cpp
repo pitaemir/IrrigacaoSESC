@@ -35,3 +35,11 @@ unsigned long totalMilliLitres =    0;         // Total de água passada (em mil
 unsigned long oldTime =             0;         // Armazena o tempo anterior
 
 Adafruit_BME280 bme;
+    float RTCtemp;
+    float avg_temp;
+ConfigData alarmTime;
+
+float DHTtemp;
+float flowData[2];
+
+bool dataReadyToSend = false;

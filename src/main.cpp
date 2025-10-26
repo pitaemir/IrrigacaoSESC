@@ -12,7 +12,7 @@
 #include "dataStoraging.h"
 #include "sensors.h"
 
-const unsigned long FETCH_INTERVAL_MS = 90 * 1000;
+const unsigned long FETCH_INTERVAL_MS = 120 * 1000;
 const unsigned long PRINT_INTERVAL_MS = 5 * 1000;
 const unsigned long SEND_INTERVAL_MS = 45 * 1000;
 
@@ -111,31 +111,27 @@ void loop()
   if (millis() - lastFetchTime >= FETCH_INTERVAL_MS) {
     lastFetchTime = millis();
     fetchConfigurationFromFirebase(); // Obtem as configuracoes e ja atualiza na memoria Flash do ESP32
+    alarmTime = readConfigurationData(); // Atualiza a struct configData com os dados lidos da memoria Flash
+    scheduleAlarm(alarmTime.year, alarmTime.month, alarmTime.day, alarmTime.hour, alarmTime.minute, alarmTime.second, alarmTime.cycle, alarmTime.duration); // Agenda o alarme com os dados lidos
   }
   
-  if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
-    lastPrintTime = millis();
-    loadAndPrintConfiguration();
-    float DHTtemp = readDHTSensor();
-    float flowData[2] = {0, 0};
-    readFlowRateSensor(flowData);
-    logSensorDataToFirebase(DHTtemp, flowData[0], flowData[1]);
-  }
+  //if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
+  //  lastPrintTime = millis();
+  //  loadAndPrintConfiguration();
+  //}
   
-  // if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
-  //   lastSendTime = millis();
-  //   float currentTemp, currentFlow;
-  //   long currentTotalML;
-  //   readSensors(currentTemp, currentFlow, currentTotalML);
-  //   //sendSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
-  //   logSensorDataToFirebase(currentTemp, currentFlow, currentTotalML);
-  // }
+  //if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
+  //  lastSendTime = millis();
+  //  readFlowRateSensor(flowData);
+  //  logSensorDataToFirebase(DHTtemp, flowData[0], flowData[1]);
+  //}
 
-  //printDateTime(myRTC.now(), myRTC.getAlarm1Mode());
-  /* float RTCtemp = myRTC.getTemperature();
+ 
   imprimirDataHora(myRTC.now());
   if (alarmFiredFlag)
   {
+    RTCtemp = myRTC.getTemperature();
+
     if (myRTC.alarmFired(1))
     {
       myRTC.clearAlarm(1);
@@ -145,52 +141,23 @@ void loop()
     }
     else if (myRTC.alarmFired(2))
     {
+      dataReadyToSend = true;
       myRTC.clearAlarm(2);
       Serial.println(" - Alarm 2 cleared");
-      sendTemperatureToFirebase(temperature);
-      sendFlowRateToFirebase(flowRate);
-      sendTotalMilliLitresToFirebase(totalMilliLitres);
+      readFlowRateSensor(flowData);
+      DHTtemp =  readDHTSensor();
+      RTCtemp = myRTC.getTemperature();
+      avg_temp = (DHTtemp + RTCtemp) / 2.0;
+      
       setValveState(false); // Fecha a válvula
     }
     alarmFiredFlag = false;
   }
-  if (flowStateFlag)
-  {
-    unsigned long currentTime;
-    unsigned long elapsedTime;
-
-    digitalWrite(debugLedPin2, !digitalRead(debugLedPin2));
-    currentTime = millis();
-    elapsedTime = currentTime - oldTime;
-
-    if (elapsedTime > 5000)
-    {
-      // Calcula a vazão
-      flowRate = (1000.0 / (elapsedTime)) * pulseCount;
-
-      // Resetar contadores
-      pulseCount = 0;
-      oldTime = currentTime;
-
-      // Calcula a quantidade de água passada
-      flowMilliLitres = (flowRate / 60) * 1000;
-
-      // Adiciona à quantidade total
-      totalMilliLitres += flowMilliLitres;
-
-      // Temperatura
-
-      // Imprime os resultados
-      Serial.print("Vazao: ");
-      Serial.print(flowRate);
-      Serial.print(" L/min - ");
-      Serial.print("Quantidade de agua: ");
-      Serial.print(flowMilliLitres);
-      Serial.print(" mL/segundo - Total: ");
-      Serial.print(totalMilliLitres);
-      Serial.println(" mL");
-    }
-  } */
-  // vTaskDelay(pdMS_TO_TICKS(5000));
-  //delay(5000);
+  if (dataReadyToSend) {
+    sendSensorDataToFirebase(avg_temp, flowData[0], flowData[1]);
+    dataReadyToSend = false;
 }
+    delay(5000);
+} 
+
+

@@ -41,6 +41,7 @@ void fetchConfigurationFromFirebase() {
             Serial.printf("Hora: %02d:%02d:%02d\n", fbHour, fbMinute, fbSecond);
             Serial.printf("Ciclo: %d, Duração: %d\n", fbCycle, fbDuration);
             
+            
             // 4. Aciona suas lógicas de negócio
             //scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle);
             storeConfigurationData(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle, fbDuration); // aqui
