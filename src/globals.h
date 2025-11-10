@@ -33,6 +33,8 @@ extern float flowRate;
 extern unsigned int flowMilliLitres;
 extern unsigned long totalMilliLitres;
 extern unsigned long oldTime;
+extern int CLEANUP_INTERVAL_DAYS;
+extern unsigned long lastCleanupTime;
 extern float DHTtemp;
 extern float flowData[2];
 extern float RTCtemp;
@@ -54,3 +56,6 @@ extern ConfigData alarmTime;
 
 // BME
 extern Adafruit_BME280 bme;
+extern const char* PENDING_FILE;
+extern int firebaseFailCount;
+extern const int MAX_FIREBASE_FAILS;

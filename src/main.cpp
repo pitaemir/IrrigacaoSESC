@@ -15,6 +15,8 @@
 const unsigned long FETCH_INTERVAL_MS = 120 * 1000;
 const unsigned long PRINT_INTERVAL_MS = 5 * 1000;
 const unsigned long SEND_INTERVAL_MS = 45 * 1000;
+static unsigned long lastResend = 0;
+const unsigned long RESEND_INTERVAL = 5UL * 60UL * 1000UL;  // 5 minutos
 
 unsigned long lastFetchTime = 0;
 unsigned long lastPrintTime = 0;
@@ -59,6 +61,12 @@ void setup()
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
 
+  // --- inicialização do watchdog ---
+esp_task_wdt_init(WDT_TIMEOUT, true);  // true = reinicia automaticamente se travar
+esp_task_wdt_add(NULL);  // adiciona o loop principal ao watchdog
+Serial.println("✅ Watchdog ativado!");
+
+
   // Firebase
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
@@ -72,6 +80,12 @@ void setup()
   config.token_status_callback = tokenStatusCallback;
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
+// --- inicialização do watchdog ---
+esp_task_wdt_init(WDT_TIMEOUT, true);  // true = reinicia automaticamente se travar
+esp_task_wdt_add(NULL);  // adiciona o loop principal ao watchdog
+Serial.println("✅ Watchdog ativado!");
+
+
 
   // RTC
   if (!myRTC.begin()){
@@ -103,6 +117,10 @@ void setup()
   }
 
   Serial.println("Setup concluído.");
+  Serial.println("Aguardando inicialização de rede...");
+delay(3000);
+Serial.printf("Heap livre: %u bytes\n", ESP.getFreeHeap());
+
 }
 
 void loop()
@@ -154,9 +172,21 @@ void loop()
     alarmFiredFlag = false;
   }
   if (dataReadyToSend) {
+    // 🔹 Envia o novo dado coletado
     sendSensorDataToFirebase(avg_temp, flowData[0], flowData[1]);
     dataReadyToSend = false;
 }
+
+// 🔹 Reenvio periódico de dados locais pendentes
+if (WiFi.status() == WL_CONNECTED && Firebase.ready() &&
+    millis() - lastResend >= RESEND_INTERVAL) {
+    
+    resendLocalSensorData();
+    lastResend = millis();
+}
+
+esp_task_wdt_reset();  // 🔁 “alimenta” o watchdog para evitar reset indevido
+
     delay(5000);
 } 
 

@@ -43,3 +43,9 @@ float DHTtemp;
 float flowData[2];
 
 bool dataReadyToSend = false;
+
+int CLEANUP_INTERVAL_DAYS = 10;
+unsigned long lastCleanupTime = 0;
+const char* PENDING_FILE = "/pending_data.jsonl";  // cada linha = um JSON separado
+const int MAX_FIREBASE_FAILS = 5; // número máximo de falhas antes do reset
+int firebaseFailCount = 0;

@@ -135,3 +135,28 @@ ConfigData readConfigurationData() {
 
     return config;
 }
+/**
+ * @brief Salva dados de sensores localmente no SPIFFS, caso o envio ao Firebase falhe.
+ */
+void saveSensorDataLocally(float temperature, float flowRate, long totalML) {
+    File file = SPIFFS.open(PENDING_FILE, FILE_APPEND);
+    if (!file) {
+        Serial.println("❌ Erro ao abrir arquivo local para escrita.");
+        return;
+    }
+
+    StaticJsonDocument<256> doc;
+    time_t now = time(nullptr);
+
+    doc["timestamp"] = now;
+    doc["temperature"] = temperature;
+    doc["flowRate"] = flowRate;
+    doc["totalMilliLitres"] = totalML;
+
+    // Escreve uma linha JSON + quebra de linha
+    serializeJson(doc, file);
+    file.println();
+    file.close();
+
+    Serial.println("📦 Dados de sensores salvos localmente.");
+}

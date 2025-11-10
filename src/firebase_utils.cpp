@@ -4,6 +4,9 @@
 #include "valve.h"
 #include "config.h"
 #include "dataStoraging.h"
+#include <time.h>
+#include <esp_task_wdt.h>
+
 
 void fetchConfigurationFromFirebase() {
     Serial.println("\nBuscando dados de configuração do Firebase...");
@@ -40,7 +43,7 @@ void fetchConfigurationFromFirebase() {
             Serial.printf("Data: %02d/%02d/%d\n", fbDay, fbMonth, fbYear);
             Serial.printf("Hora: %02d:%02d:%02d\n", fbHour, fbMinute, fbSecond);
             Serial.printf("Ciclo: %d, Duração: %d\n", fbCycle, fbDuration);
-            
+
             
             // 4. Aciona suas lógicas de negócio
             //scheduleAlarm(fbYear, fbMonth, fbDay, fbHour, fbMinute, fbSecond, fbCycle);
@@ -67,6 +70,12 @@ void fetchConfigurationFromFirebase() {
 void sendSensorDataToFirebase(float temperature, float flowRate, long totalML) {
     // 1. Define o caminho exato para onde os dados serão enviados.
     // Neste caso, diretamente para o nó "test2".
+    if (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
+        Serial.println("⚠️ Firebase não está pronto. Salvando dados localmente para enviar depois...");
+        saveSensorDataLocally(temperature, flowRate, totalML);
+        return;
+    }
+    
     String path = "/test2";
 
     // 2. Cria o objeto FirebaseJson para montar a carga de dados.
@@ -88,11 +97,22 @@ void sendSensorDataToFirebase(float temperature, float flowRate, long totalML) {
     // 4. Envia o objeto JSON para o caminho especificado.
     // A função setJSON sobrescreve todos os dados no caminho 'path'.
     if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
-        Serial.println(">>> Dados enviados com sucesso!");
+        Serial.println("✅ Dados enviados com sucesso!");
+        firebaseFailCount = 0;  // 🔄 zera o contador ao enviar com sucesso
     } else {
-        Serial.println(">>> Erro ao enviar dados.");
-        Serial.printf("RAZÃO: %s\n", fbdo.errorReason().c_str());
+        firebaseFailCount++;
+        Serial.printf("❌ Falha ao enviar dados (tentativa %d). Razão: %s\n",
+                      firebaseFailCount, fbdo.errorReason().c_str());
+        saveSensorDataLocally(temperature, flowRate, totalML);
+    
+        // 🔹 Se ultrapassar o limite de falhas, reinicia o ESP
+        if (firebaseFailCount >= MAX_FIREBASE_FAILS) {
+            Serial.println("🚨 Falhas consecutivas no Firebase. Reiniciando ESP32...");
+            delay(2000);
+            ESP.restart();
+        }
     }
+    
 }
 
 /**
@@ -123,12 +143,79 @@ void logSensorDataToFirebase(float temperature, float flowRate, long totalML) {
 
     // 5. Usa pushJSON para adicionar o novo registro ao Firebase.
     // A biblioteca cuidará de gerar o ID único.
-    if (Firebase.RTDB.pushJSON(&fbdo, path.c_str(), &json)) {
-        Serial.println(">>> Registro de histórico enviado com sucesso!");
-        // Opcional: Você pode obter o ID único que foi gerado
-        // Serial.printf("ID do novo registro: %s\n", fbdo.pushName().c_str());
-    } else {
-        Serial.println(">>> Erro ao enviar registro de histórico.");
-        Serial.printf("RAZÃO: %s\n", fbdo.errorReason().c_str());
-    }
+// 4. Envia o objeto JSON para o caminho especificado.
+if (sendWithRetry(path, json, 3, 3000)) {
+    Serial.println("Envio finalizado com sucesso após retries (se necessários).");
+} else {
+    Serial.println("❌ Falha permanente: dados não foram enviados ao Firebase.");
+    Serial.println("📦 Salvando localmente para envio posterior...");
+    saveSensorDataLocally(temperature, flowRate, totalML);
+    // ❌ NÃO chamar resendLocalSensorData() aqui — será feito periodicamente no loop()
 }
+
+}
+
+bool sendWithRetry(const String &path, FirebaseJson &json, int maxRetries = 3, int retryDelayMs = 2000) {
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+        Serial.printf("Tentativa %d de envio para %s...\n", attempt, path.c_str());
+
+        if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+            Serial.println(">>> Dados enviados com sucesso!");
+            return true;  // Sai da função se deu certo
+        } else {
+            Serial.printf(">>> Erro ao enviar dados. Tentativa %d falhou.\n", attempt);
+            Serial.printf("RAZÃO: %s\n", fbdo.errorReason().c_str());
+        }
+
+        // Espera antes de tentar novamente (só se não for a última tentativa)
+        if (attempt < maxRetries) {
+            Serial.printf("Aguardando %d ms antes de tentar novamente...\n", retryDelayMs);
+            delay(retryDelayMs);
+        }
+    }
+
+    // Se chegou aqui, todas as tentativas falharam
+    Serial.println("❌ Falha ao enviar dados após múltiplas tentativas.");
+    return false;
+}
+
+void resendLocalSensorData() {
+    if (WiFi.status() != WL_CONNECTED || !Firebase.ready()) {
+        Serial.println("⚠️ Sem conexão ou Firebase não pronto. Abortando reenvio local.");
+        return;
+    }
+    if (!SPIFFS.exists(PENDING_FILE)) return;
+
+    File file = SPIFFS.open(PENDING_FILE, FILE_READ);
+    if (!file) {
+        Serial.println("❌ Erro ao abrir arquivo de dados pendentes.");
+        return;
+    }
+
+    Serial.println("📤 Reenviando dados pendentes ao Firebase...");
+
+    while (file.available()) {
+        String line = file.readStringUntil('\n');
+        if (line.length() == 0) continue;
+
+        FirebaseJson json;
+        json.setJsonData(line);
+
+        if (Firebase.RTDB.pushJSON(&fbdo, "/historico_sensores", &json)) {
+            Serial.println("✅ Registro reenviado com sucesso.");
+        } else {
+            Serial.printf("⚠️ Falha ao reenviar: %s\n", fbdo.errorReason().c_str());
+            break; // sai do loop para tentar depois
+        }
+
+        delay(50); // evita congestionamento de rede
+    }
+
+    file.close();
+
+    // Se chegou até aqui, todos foram enviados — podemos apagar
+    SPIFFS.remove(PENDING_FILE);
+    Serial.println("🧹 Dados locais apagados após envio.");
+}
+
+
