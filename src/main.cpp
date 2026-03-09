@@ -41,8 +41,8 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    //rtc.ajustarHorario(2025, 11, 27,
-    //    11, 47, 0);  // Ajusta para uma data fixa (teste)
+    //rtc.ajustarHorario(2026, 3, 9,
+    //    13, 29, 0);  // Ajusta para uma data fixa (teste)
 
     if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
@@ -78,7 +78,8 @@ void loop() {
     float total = fluxo.getTotal();
 
     // === 3. HORÁRIO ATUAL VIA RTC ===
-    DateTime agora = rtc.getNow();
+    //rtc.atualizarHora();
+    DateTime agora = rtc.getAgora();
     String horarioAtual = String(agora.hour()) + ":" +
                           String(agora.minute()) + ":" +
                           String(agora.second());
@@ -147,7 +148,7 @@ if (rtc.alarmeDesligou()) {
     if (ciclo.equalsIgnoreCase("diario")) {
         Serial.println("Ciclo diario detectado. Reagendando para o proximo dia...");
 
-        DateTime agora = rtc.getNow();
+        DateTime agora = rtc.getAgora();
 
         DateTime proximo(
             agora.year(),

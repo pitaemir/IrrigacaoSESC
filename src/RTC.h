@@ -6,10 +6,11 @@
 class RTC {
 private:
     RTC_DS3231 rtc;
-    DateTime agora;
 
     DateTime horarioOn;
     DateTime horarioOff;
+    DateTime agora;
+
 
 
 public:
@@ -42,8 +43,7 @@ public:
 
     DateTime getHorarioOn() { return horarioOn; }
     DateTime getHorarioOff() { return horarioOff; }
-    DateTime getNow(){ return rtc.now(); }
-
+    DateTime getAgora() { return agora; }
 };
 
 #endif

@@ -13,7 +13,7 @@ bool RTC::iniciar() {
     // Só ajusta se o RTC realmente perdeu a alimentação/horário
     if (rtc.lostPower()) {
         Serial.println("RTC perdeu a hora. Ajustando...");
-        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+        atualizarHora();
     }
 
     rtc.disable32K();
@@ -36,6 +36,10 @@ void RTC::mostrarHora() {
     sprintf(buffer, "Hora atual: %02d:%02d:%02d",
             agora.hour(), agora.minute(), agora.second());
     Serial.println(buffer);
+    char buffer2[40];
+    sprintf(buffer2, "Data atual: %02d/%02d/%04d",
+            agora.day(), agora.month(), agora.year());
+    Serial.println(buffer2);
 }
 
 String RTC::horaFormatada() {
