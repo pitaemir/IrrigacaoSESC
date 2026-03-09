@@ -1,193 +1,233 @@
+// TODO:
+// - ACRESCENTAR a memoria flash o reagendamento causado pelo alarme 2
+
 #include <Arduino.h>
-#include <WiFi.h>
-#include <SPIFFS.h>
-#include "config.h"
-#include "globals.h"
-#include "rtc_utils.h"
-#include "firebase_utils.h"
-#include "tasks.h"
-#include <addons/TokenHelper.h>
-#include <addons/RTDBHelper.h>
-#include "valve.h"
-#include "dataStoraging.h"
-#include "sensors.h"
+#include <DHT.h>
 
-const unsigned long FETCH_INTERVAL_MS = 120 * 1000;
-const unsigned long PRINT_INTERVAL_MS = 5 * 1000;
-const unsigned long SEND_INTERVAL_MS = 45 * 1000;
-static unsigned long lastResend = 0;
-const unsigned long RESEND_INTERVAL = 5UL * 60UL * 1000UL;  // 5 minutos
+#include "ServidorWeb.h"
+#include "ConfiguracaoPersistente.h"
+#include "RTC.h"
+#include "Controle.h"
+#include "Rele.h"
+#include "WaterFlow.h"
 
-unsigned long lastFetchTime = 0;
-unsigned long lastPrintTime = 0;
-unsigned long lastSendTime = 0;
+// ==== Configuracao Servidor Web ====
+const char* WIFI_SSID = "ESP32-Servidor";
+const char* WIFI_PASSWORD = "123456789";
 
-void readSensors(float &temp, float &flow, long &total) {
-    // Simulação: gera valores aleatórios para demonstrar.
-    temp = 20.0 + (random(0, 500) / 100.0); // Temperatura entre 20.0 e 25.0
-    flow = random(0, 150) / 10.0;           // Fluxo entre 0.0 e 15.0
+// ==== CONFIG DHT ====
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
 
-    // Para o total, vamos apenas incrementá-lo para simular acúmulo.
-    static long accumulatedML = 0;
-    if (flow > 0) {
-        accumulatedML += (long)flow * 10; // Simula um acúmulo
+// ==== OBJETOS GLOBAIS ====
+ServidorWeb servidor(WIFI_SSID, WIFI_PASSWORD);
+ConfiguracaoPersistente configAtual;
+RTC rtc;
+Rele rele(18);              // Pino do relé
+WaterFlow fluxo(2);         // Sensor de fluxo no pino 2
+Controle controle(&dht, &rtc, &rele);  // Controle recebe o DHT oficial
+
+// ==== DECLARACAO DA ROTINA ====
+void minhaRotinaDeExecucao();
+
+// ==== SETUP ====
+void setup() {
+    Serial.begin(115200);
+
+    servidor.iniciarAP();
+    configAtual.carregar();
+    fluxo.iniciar();
+    dht.begin();
+    rele.iniciar();
+    rtc.iniciar();
+    //rtc.ajustarHorario(2025, 11, 27,
+    //    11, 47, 0);  // Ajusta para uma data fixa (teste)
+
+    if (!rtc.iniciar()) {
+        Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
     }
-    total = accumulatedML;
+
+    if (configAtual.getAno() != 0) {
+        configAtual.salvarTemporariamente(
+            configAtual.getDia(), 
+            configAtual.getMes(), 
+            configAtual.getAno(), 
+            configAtual.getHora(), 
+            configAtual.getMinuto(), 
+            configAtual.getSegundo(), 
+            configAtual.getDuracao(), 
+            configAtual.getCiclo());
+    }
 }
 
-void setup()
-{
-  Serial.begin(115200);
-  Serial.println("Iniciando Setup...");
+// ==== LOOP ====
+void loop() {
 
-  pinMode(debugLedPin, OUTPUT);
-  pinMode(debugLedPin2, OUTPUT);
-  pinMode(debugLedPin3, OUTPUT);
-  pinMode(sensorPin, INPUT);                // Pino que recebe sinal do sensor de fluxo
-  pinMode(ClockInterruptPin, INPUT_PULLUP); // Configura o pino de interrupção como entrada com pull-up
+    // === 1. LEITURA DO DHT11 (biblioteca Adafruit) ===
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
 
-  attachInterrupt(digitalPinToInterrupt(ClockInterruptPin), onAlarm, FALLING);
-  attachInterrupt(digitalPinToInterrupt(sensorPin), pulseCounter, FALLING); // interrupcao externa. sempre que variar o pino D2, vai entrar aqui . 
-
-  // WiFi
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connecting to WIFI");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(300);
-  }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-
-  // --- inicialização do watchdog ---
-esp_task_wdt_init(WDT_TIMEOUT, true);  // true = reinicia automaticamente se travar
-esp_task_wdt_add(NULL);  // adiciona o loop principal ao watchdog
-Serial.println("✅ Watchdog ativado!");
-
-
-  // Firebase
-  config.api_key = API_KEY;
-  config.database_url = DATABASE_URL;
-
-  if (Firebase.signUp(&config, &auth, "", "")) {
-      signupOK = true;
-  } else {
-      Serial.printf("signUp failed: %s\n", config.signer.signupError.message.c_str());
-  }
-
-  config.token_status_callback = tokenStatusCallback;
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
-// --- inicialização do watchdog ---
-esp_task_wdt_init(WDT_TIMEOUT, true);  // true = reinicia automaticamente se travar
-esp_task_wdt_add(NULL);  // adiciona o loop principal ao watchdog
-Serial.println("✅ Watchdog ativado!");
-
-
-
-  // RTC
-  if (!myRTC.begin()){
-    Serial.println("RTC não encontrado!");
-    Serial.flush();
-    /* while (1)
-      delay(10); */
-  } else{
-    myRTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
-
-    // Se perdeu energia, ajusta a hora atual para a hora da compilação
-    if (myRTC.lostPower()){
-      Serial.println("RTC perdeu a hora. Ajustando...");
-      myRTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    if (isnan(h) || isnan(t)) {
+       //  Serial.println("Falha ao ler DHT!");
     }
 
-    myRTC.disable32K();
-    myRTC.clearAlarm(1);
-    myRTC.clearAlarm(2);
-    myRTC.writeSqwPinMode(DS3231_OFF);
-    myRTC.disableAlarm(2);
-  }
+    // === 2. ATUALIZAÇÃO DO SENSOR DE FLUXO ===
+    fluxo.atualizarCalculo();  
+    float vazao = fluxo.getVazao();
+    float total = fluxo.getTotal();
 
-  // Inicializa o sistema de arquivos SPIFFS.
-  // O parâmetro 'true' formata o SPIFFS se a montagem falhar (útil na primeira execução).
-  if (!SPIFFS.begin(true)) {
-      Serial.println("Erro: Falha ao montar o sistema de arquivos SPIFFS.");
-      return;
-  }
-
-  Serial.println("Setup concluído.");
-  Serial.println("Aguardando inicialização de rede...");
-delay(3000);
-Serial.printf("Heap livre: %u bytes\n", ESP.getFreeHeap());
-
-}
-
-void loop()
-{
-
-  if (millis() - lastFetchTime >= FETCH_INTERVAL_MS) {
-    lastFetchTime = millis();
-    fetchConfigurationFromFirebase(); // Obtem as configuracoes e ja atualiza na memoria Flash do ESP32
-    alarmTime = readConfigurationData(); // Atualiza a struct configData com os dados lidos da memoria Flash
-    scheduleAlarm(alarmTime.year, alarmTime.month, alarmTime.day, alarmTime.hour, alarmTime.minute, alarmTime.second, alarmTime.cycle, alarmTime.duration); // Agenda o alarme com os dados lidos
-  }
-  
-  //if (millis() - lastPrintTime >=  PRINT_INTERVAL_MS) {
-  //  lastPrintTime = millis();
-  //  loadAndPrintConfiguration();
-  //}
-  
-  //if (millis() - lastSendTime >=  SEND_INTERVAL_MS) {
-  //  lastSendTime = millis();
-  //  readFlowRateSensor(flowData);
-  //  logSensorDataToFirebase(DHTtemp, flowData[0], flowData[1]);
-  //}
-
- 
-  imprimirDataHora(myRTC.now());
-  if (alarmFiredFlag)
-  {
-    RTCtemp = myRTC.getTemperature();
-
-    if (myRTC.alarmFired(1))
-    {
-      myRTC.clearAlarm(1);
-      Serial.println(" - Alarm 1 cleared");
-      setValveState(true); // Abre a válvula
-      printDateTime(myRTC.getAlarm2(), myRTC.getAlarm2Mode());
-    }
-    else if (myRTC.alarmFired(2))
-    {
-      dataReadyToSend = true;
-      myRTC.clearAlarm(2);
-      Serial.println(" - Alarm 2 cleared");
-      readFlowRateSensor(flowData);
-      DHTtemp =  readDHTSensor();
-      RTCtemp = myRTC.getTemperature();
-      avg_temp = (DHTtemp + RTCtemp) / 2.0;
-      
-      setValveState(false); // Fecha a válvula
-    }
-    alarmFiredFlag = false;
-  }
-  if (dataReadyToSend) {
-    // 🔹 Envia o novo dado coletado
-    sendSensorDataToFirebase(avg_temp, flowData[0], flowData[1]);
-    dataReadyToSend = false;
-}
-
-// 🔹 Reenvio periódico de dados locais pendentes
-if (WiFi.status() == WL_CONNECTED && Firebase.ready() &&
-    millis() - lastResend >= RESEND_INTERVAL) {
+    // === 3. HORÁRIO ATUAL VIA RTC ===
+    DateTime agora = rtc.getNow();
+    String horarioAtual = String(agora.hour()) + ":" +
+                          String(agora.minute()) + ":" +
+                          String(agora.second());
     
-    resendLocalSensorData();
-    lastResend = millis();
+    String dataAtual =
+                          String(agora.day()) + "/" +
+                          String(agora.month()) + "/" +
+                          String(agora.year());
+
+    // === 4. SERVIDOR WEB (passando TODOS os parâmetros) ===
+    servidor.manusearClientes(
+        rele,
+        configAtual,
+        t,          // temperatura
+        h,          // umidade
+        vazao,      // fluxo L/min
+        total,      // total irrigado
+        horarioAtual,
+        dataAtual
+    );
+
+    // === 5. ROTINA PRINCIPAL (alarmes, re-agendamentos, logs) ===
+    minhaRotinaDeExecucao();
+
+    // Pequeno delay para estabilidade do loop
+    delay(10);
 }
 
-esp_task_wdt_reset();  // 🔁 “alimenta” o watchdog para evitar reset indevido
 
-    delay(5000);
-} 
+// ==== ROTINA PRINCIPAL ====
+void minhaRotinaDeExecucao() {
 
+    if (configAtual.isAtualizada()) {
+        Serial.println("Detectada nova configuracao. Agendando no RTC...");
 
+        String ciclo = configAtual.getCiclo();
+
+        if (ciclo.equalsIgnoreCase("unico") || ciclo.equalsIgnoreCase("diario")) {
+            rtc.agendarAcionamento(
+                configAtual.getAno(), 
+                configAtual.getMes(), 
+                configAtual.getDia(),
+                configAtual.getHora(), 
+                configAtual.getMinuto(), 
+                configAtual.getSegundo(),
+                configAtual.getDuracao()
+            );
+        }
+
+        configAtual.clearAtualizada();
+    }
+
+    // EVENTO ALARME 1
+    if (rtc.alarmeLigou()) {
+        Serial.println(">>> ALARME 1 DISPAROU — LIGAR RELE <<<");
+        rele.ligar();
+    }
+
+    // EVENTO ALARME 2
+if (rtc.alarmeDesligou()) {
+    Serial.println(">>> ALARME 2 DISPAROU — DESLIGAR RELE <<<");
+    rele.desligar();
+
+    String ciclo = configAtual.getCiclo();
+
+    if (ciclo.equalsIgnoreCase("diario")) {
+        Serial.println("Ciclo diario detectado. Reagendando para o proximo dia...");
+
+        DateTime agora = rtc.getNow();
+
+        DateTime proximo(
+            agora.year(),
+            agora.month(),
+            agora.day(),
+            configAtual.getHora(),
+            configAtual.getMinuto(),
+            configAtual.getSegundo()
+        );
+
+        // Se o horario de hoje ja passou, agenda para amanha
+        if (proximo <= agora) {
+            proximo = proximo + TimeSpan(1, 0, 0, 0);
+        }
+
+        rtc.agendarAcionamento(
+            proximo.year(),
+            proximo.month(),
+            proximo.day(),
+            proximo.hour(),
+            proximo.minute(),
+            proximo.second(),
+            configAtual.getDuracao()
+        );
+
+        Serial.print("Proximo acionamento diario agendado para: ");
+        Serial.print(proximo.day());
+        Serial.print("/");
+        Serial.print(proximo.month());
+        Serial.print("/");
+        Serial.print(proximo.year());
+        Serial.print(" ");
+        Serial.print(proximo.hour());
+        Serial.print(":");
+        Serial.print(proximo.minute());
+        Serial.print(":");
+        Serial.println(proximo.second());
+    }
+    else if (ciclo.equalsIgnoreCase("unico")) {
+        Serial.println("Ciclo unico detectado. Nao sera reagendado.");
+    }
+    else {
+        Serial.println("Ciclo desconhecido. Nenhum reagendamento realizado.");
+    }
+}
+
+    // MENSAGENS A CADA 5s
+    static long lastMsg = 0;
+    if (millis() - lastMsg > 5000) { 
+        lastMsg = millis();
+
+        Serial.println("\n----------------------------------------------");
+
+        // FLUXO
+        Serial.print("Fluxo: ");
+        Serial.print(fluxo.getVazao());
+        Serial.print(" L/min | Total: ");
+        Serial.print(fluxo.getTotal());
+        Serial.println(" L");
+
+        // DHT11 OFICIAL (ADAFRUIT)
+        float h = dht.readHumidity();
+        float t = dht.readTemperature();
+
+        if (isnan(h) || isnan(t)) {
+            Serial.println("Falha ao ler DHT!");
+        } else {
+            Serial.print("Temp: ");
+            Serial.print(t);
+            Serial.print(" °C | Umidade: ");
+            Serial.print(h);
+            Serial.println(" %");
+        }
+
+        rtc.mostrarHora();
+        Serial.println("Executando rotina principal...");
+        configAtual.imprimir(); 
+        
+        Serial.print("Status da Válvula: "); 
+        Serial.println(rele.estaLigado() ? "LIGADO" : "DESLIGADO");
+        Serial.println("----------------------------------------------");
+    }
+}
