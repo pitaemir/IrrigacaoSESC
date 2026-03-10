@@ -17,7 +17,7 @@ const char* WIFI_PASSWORD = "123456789";
 
 // ==== CONFIG DHT ====
 #define DHTPIN 4
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
 // ==== OBJETOS GLOBAIS ====
@@ -41,8 +41,8 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    //rtc.ajustarHorario(2026, 3, 9,
-    //    13, 29, 0);  // Ajusta para uma data fixa (teste)
+    //rtc.ajustarHorario(2026, 3, 10,
+    //    12, 53, 0);  // Ajusta para uma data fixa (teste)
 
     if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
