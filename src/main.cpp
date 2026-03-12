@@ -41,8 +41,8 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    //rtc.ajustarHorario(2026, 3, 10,
-    //    12, 53, 0);  // Ajusta para uma data fixa (teste)
+    rtc.ajustarHorario(2026, 3, 12,
+       13, 33, 0);  // Ajusta para uma data fixa (teste)
 
     if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
@@ -115,19 +115,19 @@ void minhaRotinaDeExecucao() {
     if (configAtual.isAtualizada()) {
         Serial.println("Detectada nova configuracao. Agendando no RTC...");
 
-        String ciclo = configAtual.getCiclo();
+        int ciclo = configAtual.getCiclo();
+        int cicloHoras = ciclo;  // 0 - unico, 6h, 12h, 18h, 24h
 
-        if (ciclo.equalsIgnoreCase("unico") || ciclo.equalsIgnoreCase("diario")) {
-            rtc.agendarAcionamento(
-                configAtual.getAno(), 
-                configAtual.getMes(), 
-                configAtual.getDia(),
-                configAtual.getHora(), 
-                configAtual.getMinuto(), 
-                configAtual.getSegundo(),
-                configAtual.getDuracao()
-            );
-        }
+// Se existe uma configuracao valida, agenda o primeiro acionamento
+        rtc.agendarAcionamento(
+            configAtual.getAno(), 
+            configAtual.getMes(), 
+            configAtual.getDia(),
+            configAtual.getHora(), 
+            configAtual.getMinuto(), 
+            configAtual.getSegundo(),
+            configAtual.getDuracao()
+);
 
         configAtual.clearAtualizada();
     }
@@ -143,26 +143,17 @@ if (rtc.alarmeDesligou()) {
     Serial.println(">>> ALARME 2 DISPAROU — DESLIGAR RELE <<<");
     rele.desligar();
 
-    String ciclo = configAtual.getCiclo();
+    int cicloHoras = configAtual.getCiclo();
 
-    if (ciclo.equalsIgnoreCase("diario")) {
-        Serial.println("Ciclo diario detectado. Reagendando para o proximo dia...");
+    if (cicloHoras == 0) {
+        Serial.println("Ciclo unico detectado. Nao sera reagendado.");
+    } else {
+        Serial.print("Reagendando para daqui a ");
+        Serial.print(cicloHoras);
+        Serial.println(" hora(s)...");
 
         DateTime agora = rtc.getAgora();
-
-        DateTime proximo(
-            agora.year(),
-            agora.month(),
-            agora.day(),
-            configAtual.getHora(),
-            configAtual.getMinuto(),
-            configAtual.getSegundo()
-        );
-
-        // Se o horario de hoje ja passou, agenda para amanha
-        if (proximo <= agora) {
-            proximo = proximo + TimeSpan(1, 0, 0, 0);
-        }
+        DateTime proximo = agora + TimeSpan(cicloHoras / 24, cicloHoras % 24, 0, 0);
 
         rtc.agendarAcionamento(
             proximo.year(),
@@ -174,7 +165,7 @@ if (rtc.alarmeDesligou()) {
             configAtual.getDuracao()
         );
 
-        Serial.print("Proximo acionamento diario agendado para: ");
+        Serial.print("Proximo acionamento agendado para: ");
         Serial.print(proximo.day());
         Serial.print("/");
         Serial.print(proximo.month());
@@ -186,12 +177,6 @@ if (rtc.alarmeDesligou()) {
         Serial.print(proximo.minute());
         Serial.print(":");
         Serial.println(proximo.second());
-    }
-    else if (ciclo.equalsIgnoreCase("unico")) {
-        Serial.println("Ciclo unico detectado. Nao sera reagendado.");
-    }
-    else {
-        Serial.println("Ciclo desconhecido. Nenhum reagendamento realizado.");
     }
 }
 

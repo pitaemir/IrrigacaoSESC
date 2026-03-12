@@ -56,7 +56,7 @@ bool ConfiguracaoPersistente::carregar() {
     minuto = doc["minuto"] | 0;
     segundo = doc["segundo"] | 0;
     duracao = doc["duracao"] | 0;
-    ciclo = doc["ciclo"].as<String>();
+    ciclo = doc["ciclo"] | 0;
 
     Serial.println("Configuracao carregada da Flash.");
     return true;
@@ -101,7 +101,7 @@ bool ConfiguracaoPersistente::salvar() {
 /**
  * @brief Salva temporariamente os dados recebidos do formulário nos atributos da classe.
  */
-void ConfiguracaoPersistente::salvarTemporariamente(int d, int m, int a, int h, int min, int s, int dur, String c) {
+void ConfiguracaoPersistente::salvarTemporariamente(int d, int m, int a, int h, int min, int s, int dur, int c) {
     dia = d;
     mes = m;
     ano = a;
@@ -126,7 +126,7 @@ void ConfiguracaoPersistente::imprimir() {
         Serial.print("Hora Programada: "); Serial.print(hora); Serial.print(":"); 
         Serial.print(minuto); Serial.print(":"); Serial.println(segundo);
         Serial.print("Duracao: "); Serial.print(duracao); Serial.println(" minutos");
-        Serial.print("Ciclo: "); Serial.println(ciclo);
+        Serial.print("Ciclo: "); Serial.println(ciclo);Serial.println(" horas");
     } else {
         Serial.println("Config padrao / Vazia.");
     }

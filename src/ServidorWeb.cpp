@@ -106,7 +106,7 @@ void ServidorWeb::manusearClientes(
                             getParameterValue(uri, "minuto").toInt(),
                             getParameterValue(uri, "segundo").toInt(),
                             getParameterValue(uri, "duracao").toInt(),
-                            getParameterValue(uri, "ciclo")
+                            getParameterValue(uri, "ciclo").toInt()
                         );
 
                         config.salvar();
@@ -264,8 +264,10 @@ void ServidorWeb::gerarPaginaHTML(
     client.println("<div class='form-group'>");
     client.println("<label for='ciclo'>Ciclo:</label>");
     client.println("<select id='ciclo' name='ciclo'>");
-    client.println("<option value='diario'>Diário</option>");
-    client.println("<option value='unico'>Único</option>");
+    client.println("<option value='6'>A cada 6 horas</option>");
+    client.println("<option value='12'>A cada 12 horas</option>");
+    client.println("<option value='24'>A cada 24 horas</option>");
+    client.println("<option value='0'>Único</option>");
     client.println("</select>");
     client.println("</div>");
 

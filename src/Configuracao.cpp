@@ -4,7 +4,7 @@
 /**
  * @brief Salva os dados de configuração de acionamento.
  */
-void Configuracao::salvar(int d, int m, int a, int h, int min, int s, int dur, String c) {
+void Configuracao::salvar(int d, int m, int a, int h, int min, int s, int dur, int c) {
     dia = d;
     mes = m;
     ano = a;
@@ -27,7 +27,7 @@ void Configuracao::imprimir() {
         Serial.print("Hora Programada: "); Serial.print(hora); Serial.print(":"); 
         Serial.print(minuto); Serial.print(":"); Serial.println(segundo);
         Serial.print("Duracao: "); Serial.print(duracao); Serial.println(" minutos");
-        Serial.print("Ciclo: "); Serial.println(ciclo);
+        Serial.print("Ciclo: "); Serial.println(ciclo); Serial.println(" horas");
     } else {
         Serial.println("Nenhuma configuracao salva ainda.");
     }

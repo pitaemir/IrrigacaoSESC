@@ -15,19 +15,18 @@ private:
     int minuto = 0;
     int segundo = 0;
     int duracao = 0; // Duração em minutos
-    String ciclo = "unico"; // "diario" ou "unico"
-
+    int ciclo = 0;   // Ciclo em horas (0 = único, >0 = repetição a cada X horas)
 public:
     // Construtor (vazio, pois usa valores padrão)
     Configuracao() {}
 
     // Métodos para controle e acesso
-    void salvar(int d, int m, int a, int h, int min, int s, int dur, String c);
+    void salvar(int d, int m, int a, int h, int min, int s, int dur, int c);
     void imprimir();
 
     // Getters
     int getAno() const { return ano; }
-    String getCiclo() const { return ciclo; }
+    int getCiclo() const { return ciclo; }
 };
 
 #endif // CONFIGURACAO_H
