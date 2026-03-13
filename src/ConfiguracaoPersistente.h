@@ -37,7 +37,11 @@ public:
     // Métodos de Persistência
     bool carregar();
     bool salvar();
+    bool _cancelarCiclo = false; // Método privado para cancelar ciclo (limpar config)
 
+    bool deveCancelarCiclo() const { return _cancelarCiclo; }
+    void solicitarCancelamentoCiclo() { _cancelarCiclo = true; }
+    void clearCancelarCiclo() { _cancelarCiclo = false; }
     // Métodos de Controle (Setters)
     void salvarTemporariamente(int d, int m, int a, int h, int min, int s, int dur, int c);
     

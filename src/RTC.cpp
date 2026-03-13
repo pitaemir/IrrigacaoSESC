@@ -155,3 +155,9 @@ bool RTC::alarmeDesligou() {
     }
     return false;
 }
+
+void RTC::cancelarAlarmes() {
+    rtc.clearAlarm(1);
+    rtc.clearAlarm(2);
+    Serial.println("Alarmes do RTC cancelados.");
+}

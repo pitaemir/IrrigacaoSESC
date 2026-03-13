@@ -14,6 +14,9 @@
 // ==== Configuracao Servidor Web ====
 const char* WIFI_SSID = "ESP32-Servidor";
 const char* WIFI_PASSWORD = "123456789";
+int numeroAtivacao = 0;
+
+
 
 // ==== CONFIG DHT ====
 #define DHTPIN 4
@@ -22,6 +25,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // ==== OBJETOS GLOBAIS ====
 ServidorWeb servidor(WIFI_SSID, WIFI_PASSWORD);
+DateTime proximoAcionamento;
 ConfiguracaoPersistente configAtual;
 RTC rtc;
 Rele rele(18);              // Pino do relé
@@ -41,8 +45,8 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    rtc.ajustarHorario(2026, 3, 12,
-       13, 33, 0);  // Ajusta para uma data fixa (teste)
+    //rtc.ajustarHorario(2026, 3, 13,
+    //   15, 17, 0);  // Ajusta para uma data fixa (teste)
 
     if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
@@ -111,7 +115,14 @@ void loop() {
 
 // ==== ROTINA PRINCIPAL ====
 void minhaRotinaDeExecucao() {
-
+    // CANCELAMENTO DE CICLO (se solicitado pela interface web)
+    if (configAtual.deveCancelarCiclo()) {
+    rele.desligar();
+    rtc.cancelarAlarmes();
+    configAtual.salvarTemporariamente(0, 0, 0, 0, 0, 0, 0, 0);
+    configAtual.salvar();
+    configAtual.clearCancelarCiclo();
+}
     if (configAtual.isAtualizada()) {
         Serial.println("Detectada nova configuracao. Agendando no RTC...");
 
@@ -136,6 +147,7 @@ void minhaRotinaDeExecucao() {
     if (rtc.alarmeLigou()) {
         Serial.println(">>> ALARME 1 DISPAROU — LIGAR RELE <<<");
         rele.ligar();
+        numeroAtivacao++;
     }
 
     // EVENTO ALARME 2
@@ -154,6 +166,7 @@ if (rtc.alarmeDesligou()) {
 
         DateTime agora = rtc.getAgora();
         DateTime proximo = agora + TimeSpan(cicloHoras / 24, cicloHoras % 24, 0, 0);
+        proximoAcionamento = proximo;
 
         rtc.agendarAcionamento(
             proximo.year(),
@@ -215,5 +228,20 @@ if (rtc.alarmeDesligou()) {
         Serial.print("Status da Válvula: "); 
         Serial.println(rele.estaLigado() ? "LIGADO" : "DESLIGADO");
         Serial.println("----------------------------------------------");
+        Serial.print("Número de ativações: ");
+        Serial.println(numeroAtivacao);
+
+        Serial.print("Próximo acionamento: ");
+        Serial.print(proximoAcionamento.day());
+        Serial.print("/");
+        Serial.print(proximoAcionamento.month());
+        Serial.print("/");
+        Serial.print(proximoAcionamento.year());
+        Serial.print(" ");
+        Serial.print(proximoAcionamento.hour());
+        Serial.print(":");
+        Serial.print(proximoAcionamento.minute());
+        Serial.print(":");
+        Serial.println(proximoAcionamento.second());
     }
 }

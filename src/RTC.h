@@ -29,6 +29,7 @@ public:
                             int duracaoMinutos);
 
     void ajustarParaHoraDoComputador();
+    void cancelarAlarmes();
 
     void ajustarHorario(int ano, int mes, int dia,
         int hora, int minuto, int segundo);

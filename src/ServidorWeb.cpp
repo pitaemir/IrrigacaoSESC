@@ -90,6 +90,19 @@ void ServidorWeb::manusearClientes(
                     }
 
                     // =========================================================
+                    // PARAR CICLO DE IRRIGAÇÃO
+                    // =========================================================
+                    if (header.indexOf("GET /parar") >= 0) {
+                        valvula.desligar();
+                        config.solicitarCancelamentoCiclo();
+
+                        client.println("HTTP/1.1 303 See Other");
+                        client.println("Location: /");
+                        client.println();
+                        break;
+                    }
+
+                    // =========================================================
                     // SALVAR CONFIGURAÇÕES
                     // =========================================================
                     if (header.indexOf("GET /save") >= 0) {
@@ -273,6 +286,12 @@ void ServidorWeb::gerarPaginaHTML(
 
     client.println("<button type='submit'>Salvar</button>");
     client.println("</form></div>");
+
+    client.println("<div class='card'>");
+    client.println("<h2>Controle de Ciclo</h2>");
+    client.println("<p>Interromper irrigação automática</p>");
+    client.println("<a href='/parar'><button style='background-color:#dc3545'>Parar Ciclo</button></a>");
+    client.println("</div>");
 
     client.println("</div></body></html>");
 }

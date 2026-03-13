@@ -119,7 +119,7 @@ void ConfiguracaoPersistente::salvarTemporariamente(int d, int m, int a, int h, 
  */
 void ConfiguracaoPersistente::imprimir() {
     Serial.println("----------------------------------------------");
-    Serial.println("Configuracao de Acionamento Atual (Memoria):");
+    Serial.println("Ultima configuracao de acionamento (Memoria):");
     if (ano != 0) {
         Serial.print("Data Programada: "); Serial.print(dia); Serial.print("/"); 
         Serial.print(mes); Serial.print("/"); Serial.println(ano);
