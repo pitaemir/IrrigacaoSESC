@@ -45,8 +45,8 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    //rtc.ajustarHorario(2026, 3, 13,
-    //   15, 17, 0);  // Ajusta para uma data fixa (teste)
+    rtc.ajustarHorario(2026, 3, 13,
+       17, 59, 0);  // Ajusta para uma data fixa (teste)
 
     if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");

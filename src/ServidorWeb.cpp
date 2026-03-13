@@ -39,7 +39,91 @@ String ServidorWeb::getParameterValue(String uri, String param) {
 
     return uri.substring(startIndex, endIndex);
 }
+String ServidorWeb::getRequestPath(String requestLine) {
+    int firstSpace = requestLine.indexOf(' ');
+    int secondSpace = requestLine.indexOf(' ', firstSpace + 1);
 
+    if (firstSpace < 0 || secondSpace < 0) return "/";
+
+    return requestLine.substring(firstSpace + 1, secondSpace);
+}
+String ServidorWeb::decodeURL(String text) {
+    text.replace("%2F", "/");
+    text.replace("%3A", ":");
+    text.replace("%20", " ");
+    text.replace("+", " ");
+    return text;
+}
+
+
+// =========================================================
+// FUNÇÃO AUXILIAR PARA GERAR PÁGINA DE CONFIGURAÇÃO
+// =========================================================
+void ServidorWeb::gerarPaginaConfiguracao(WiFiClient client) {
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-type:text/html");
+    client.println("Connection: close");
+    client.println();
+
+    client.println("<!DOCTYPE html><html lang='pt-br'>");
+    client.println("<head>");
+    client.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
+    client.println("<meta charset='UTF-8'>");
+    client.println("<title>Configurar Irrigação</title>");
+
+    client.println("<style>");
+    client.println("body { font-family: Arial; background-color: #f4f7f6; color: #333; margin: 0; padding: 0; }");
+    client.println(".container { max-width: 600px; margin: 20px auto; padding: 20px; }");
+    client.println(".card { background: white; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }");
+    client.println("form { display: flex; flex-direction: column; gap: 12px; }");
+    client.println(".form-group { display: flex; flex-direction: column; }");
+    client.println("label { font-weight: bold; margin-bottom: 4px; }");
+    client.println("input, select { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; width: 100%; box-sizing: border-box; }");
+    client.println("button { margin-top: 10px; padding: 12px; border: none; border-radius: 8px; background-color: #28a745; color: white; font-size: 16px; cursor: pointer; }");
+    client.println("a { text-decoration: none; }");
+    client.println(".btn-voltar { display: inline-block; margin-top: 12px; padding: 12px; border-radius: 8px; background-color: #6c757d; color: white; }");
+    client.println("</style>");
+
+    client.println("</head><body>");
+    client.println("<div class='container'>");
+    client.println("<h1>Configurar Irrigação</h1>");
+
+    client.println("<div class='card'>");
+    client.println("<form action='/save' method='GET'>");
+
+    client.println("<div class='form-group'>");
+    client.println("<label for='data'>Data:</label>");
+    client.println("<input type='text' id='data' name='data' placeholder='dd/mm/aaaa'>");
+    client.println("</div>");
+
+    client.println("<div class='form-group'>");
+    client.println("<label for='hora'>Hora:</label>");
+    client.println("<input type='number' id='hora' name='hora' min='0' max='23'>");
+    client.println("</div>");
+
+    client.println("<div class='form-group'>");
+    client.println("<label for='duracao'>Duração (min):</label>");
+    client.println("<input type='number' id='duracao' name='duracao' min='1'>");
+    client.println("</div>");
+
+    client.println("<div class='form-group'>");
+    client.println("<label for='ciclo'>Ciclo:</label>");
+    client.println("<select id='ciclo' name='ciclo'>");
+    client.println("<option value='6'>A cada 6 horas</option>");
+    client.println("<option value='12'>A cada 12 horas</option>");
+    client.println("<option value='24'>A cada 24 horas</option>");
+    client.println("<option value='0'>Único</option>");
+    client.println("</select>");
+    client.println("</div>");
+
+    client.println("<button type='submit'>Salvar</button>");
+    client.println("</form>");
+
+    client.println("<a class='btn-voltar' href='/'>Voltar</a>");
+    client.println("</div>");
+    client.println("</div>");
+    client.println("</body></html>");
+}
 
 // =========================================================
 // FUNÇÃO PRINCIPAL DO SERVIDOR WEB
@@ -60,6 +144,7 @@ void ServidorWeb::manusearClientes(
 
     Serial.println("Novo cliente conectado.");
     String currentLine = "";
+    String requestLine = "";
     header = "";
 
     while (client.connected()) {
@@ -68,12 +153,24 @@ void ServidorWeb::manusearClientes(
             header += c;
 
             if (c == '\n') {
-                if (currentLine.length() == 0) {
+                // captura a PRIMEIRA linha da requisição
+                if (requestLine.length() == 0) {
+                    requestLine = currentLine;
+                }
 
-                    // =========================================================
+                if (currentLine.length() == 0) {
+                    String path = getRequestPath(requestLine);
+
+                    Serial.print("Requisição: ");
+                    Serial.println(requestLine);
+
+                    Serial.print("Path detectado: ");
+                    Serial.println(path);
+
+                    // ============================
                     // CONTROLE DA VÁLVULA
-                    // =========================================================
-                    if (header.indexOf("GET /valvula/on") >= 0) {
+                    // ============================
+                    if (path == "/valvula/on") {
                         valvula.ligar();
                         client.println("HTTP/1.1 303 See Other");
                         client.println("Location: /");
@@ -81,7 +178,7 @@ void ServidorWeb::manusearClientes(
                         break;
                     }
 
-                    if (header.indexOf("GET /valvula/off") >= 0) {
+                    if (path == "/valvula/off") {
                         valvula.desligar();
                         client.println("HTTP/1.1 303 See Other");
                         client.println("Location: /");
@@ -89,10 +186,10 @@ void ServidorWeb::manusearClientes(
                         break;
                     }
 
-                    // =========================================================
-                    // PARAR CICLO DE IRRIGAÇÃO
-                    // =========================================================
-                    if (header.indexOf("GET /parar") >= 0) {
+                    // ============================
+                    // PARAR CICLO
+                    // ============================
+                    if (path == "/parar") {
                         valvula.desligar();
                         config.solicitarCancelamentoCiclo();
 
@@ -102,24 +199,55 @@ void ServidorWeb::manusearClientes(
                         break;
                     }
 
-                    // =========================================================
-                    // SALVAR CONFIGURAÇÕES
-                    // =========================================================
-                    if (header.indexOf("GET /save") >= 0) {
+                    // ============================
+                    // ABRIR CONFIGURAÇÃO
+                    // ============================
+                    if (path == "/config") {
+                        gerarPaginaConfiguracao(client);
+                        client.println();
+                        break;
+                    }
 
-                        int startUri = header.indexOf("GET /save");
-                        int endUri = header.indexOf(" HTTP/1.1");
-                        String uri = header.substring(startUri + 4, endUri);
+                    // ============================
+                    // SALVAR CONFIGURAÇÕES
+                    // ============================
+                    if (path.startsWith("/save")) {
+                        String data = decodeURL(getParameterValue(path, "data"));
+                        int hora = getParameterValue(path, "hora").toInt();
+                        int duracao = getParameterValue(path, "duracao").toInt();
+                        int ciclo = getParameterValue(path, "ciclo").toInt();
+
+                        int dia = 0;
+                        int mes = 0;
+                        int ano = 0;
+
+                        int barra1 = data.indexOf('/');
+                        int barra2 = data.indexOf('/', barra1 + 1);
+
+                        if (barra1 > 0 && barra2 > barra1) {
+                            dia = data.substring(0, barra1).toInt();
+                            mes = data.substring(barra1 + 1, barra2).toInt();
+                            ano = data.substring(barra2 + 1).toInt();
+                        }
+
+                        Serial.println("=== CONFIG SALVA ===");
+                        Serial.print("Data: "); Serial.println(data);
+                        Serial.print("Dia: "); Serial.println(dia);
+                        Serial.print("Mes: "); Serial.println(mes);
+                        Serial.print("Ano: "); Serial.println(ano);
+                        Serial.print("Hora: "); Serial.println(hora);
+                        Serial.print("Duracao: "); Serial.println(duracao);
+                        Serial.print("Ciclo: "); Serial.println(ciclo);
 
                         config.salvarTemporariamente(
-                            getParameterValue(uri, "dia").toInt(),
-                            getParameterValue(uri, "mes").toInt(),
-                            getParameterValue(uri, "ano").toInt(),
-                            getParameterValue(uri, "hora").toInt(),
-                            getParameterValue(uri, "minuto").toInt(),
-                            getParameterValue(uri, "segundo").toInt(),
-                            getParameterValue(uri, "duracao").toInt(),
-                            getParameterValue(uri, "ciclo").toInt()
+                            dia,
+                            mes,
+                            ano,
+                            hora,
+                            0,   // minuto fixo
+                            0,   // segundo fixo
+                            duracao,
+                            ciclo
                         );
 
                         config.salvar();
@@ -130,9 +258,9 @@ void ServidorWeb::manusearClientes(
                         break;
                     }
 
-                    // =========================================================
+                    // ============================
                     // PÁGINA PRINCIPAL
-                    // =========================================================
+                    // ============================
                     String estado = valvula.estaLigado() ? "on" : "off";
 
                     gerarPaginaHTML(
@@ -148,6 +276,7 @@ void ServidorWeb::manusearClientes(
 
                     client.println();
                     break;
+
                 } else {
                     currentLine = "";
                 }
@@ -163,7 +292,7 @@ void ServidorWeb::manusearClientes(
 
 
 // =========================================================
-// GERAR HTML COMPLETO
+// GERAR HTML DA PÁGINA PRINCIPAL
 // =========================================================
 void ServidorWeb::gerarPaginaHTML(
     WiFiClient client,
@@ -178,36 +307,30 @@ void ServidorWeb::gerarPaginaHTML(
     client.println("HTTP/1.1 200 OK");
     client.println("Content-type:text/html");
     client.println("Connection: close");
-    client.println(); 
-    
+    client.println();
+
     client.println("<!DOCTYPE html><html lang=\"pt-br\">");
     client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
     client.println("<meta charset=\"UTF-8\">");
     client.println("<title>Controle da Horta</title>");
-    
-    // CSS
+
     client.println("<style>");
     client.println("body { font-family: Arial; background-color: #f4f7f6; color: #333; margin: 0; padding: 0; }");
     client.println(".container { max-width: 600px; margin: 20px auto; padding: 20px; }");
     client.println(".status-box, .card { background: white; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }");
     client.println(".status-text-on { color: #28a745; font-weight: bold; }");
     client.println(".status-text-off { color: #dc3545; font-weight: bold; }");
-
-    /* novos estilos do formulário */
-    client.println("form { display: flex; flex-direction: column; gap: 12px; }");
-    client.println(".form-group { display: flex; flex-direction: column; }");
-    client.println("label { font-weight: bold; margin-bottom: 4px; }");
-    client.println("input, select { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; width: 100%; box-sizing: border-box; }");
-    client.println("button { margin-top: 10px; padding: 12px; border: none; border-radius: 8px; background-color: #28a745; color: white; font-size: 16px; cursor: pointer; }");
-    client.println("button:hover { background-color: #218838; }");
+    client.println("button { margin-top: 10px; padding: 12px; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer; }");
+    client.println(".btn-parar { background-color:#dc3545; }");
+    client.println(".btn-config { background-color:#007bff; }");
+    client.println("a { text-decoration: none; }");
     client.println("</style>");
-    
+
     client.println("</head><body><div class='container'>");
-    
-    // === Título ===
+
     client.println("<h1>Controle Remoto da Horta</h1>");
 
-    // === STATUS DA VÁLVULA ===
+    // STATUS DA VÁLVULA
     client.println("<div class='status-box'>");
     if (valvulaEstado == "off") {
         client.println("<p>Status da válvula: <span class='status-text-off'>Desligada</span></p>");
@@ -218,14 +341,14 @@ void ServidorWeb::gerarPaginaHTML(
     }
     client.println("</div>");
 
-    // === DATA E HORA ===
+    // DATA E HORA
     client.println("<div class='card'>");
     client.println("<h2>Data e Hora</h2>");
     client.printf("<p><b>Data:</b> %s</p>", dataAtual.c_str());
     client.printf("<p><b>Hora:</b> %s</p>", horarioAtual.c_str());
     client.println("</div>");
 
-    // === SENSORES ===
+    // SENSORES
     client.println("<div class='card'>");
     client.println("<h2>Sensores</h2>");
     client.printf("<p><b>Temperatura:</b> %.1f °C</p>", temperatura);
@@ -234,63 +357,13 @@ void ServidorWeb::gerarPaginaHTML(
     client.printf("<p><b>Total Irrigado:</b> %.2f L</p>", fluxoTotal);
     client.println("</div>");
 
-    // === FORMULÁRIO ANTIGO — SEM ALTERAÇÕES ===
+    // CONTROLE DE CICLO + CONFIGURAR
     client.println("<div class='card'>");
-    client.println("<h2>Programar Irrigação</h2>");
-    client.println("<form action='/save' method='GET'>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='dia'>Dia:</label>");
-    client.println("<input type='text' id='dia' name='dia'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='mes'>Mês:</label>");
-    client.println("<input type='text' id='mes' name='mes'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='ano'>Ano:</label>");
-    client.println("<input type='text' id='ano' name='ano'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='hora'>Hora:</label>");
-    client.println("<input type='text' id='hora' name='hora'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='minuto'>Minuto:</label>");
-    client.println("<input type='text' id='minuto' name='minuto'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='segundo'>Segundo:</label>");
-    client.println("<input type='text' id='segundo' name='segundo'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='duracao'>Duração (min):</label>");
-    client.println("<input type='text' id='duracao' name='duracao'>");
-    client.println("</div>");
-
-    client.println("<div class='form-group'>");
-    client.println("<label for='ciclo'>Ciclo:</label>");
-    client.println("<select id='ciclo' name='ciclo'>");
-    client.println("<option value='6'>A cada 6 horas</option>");
-    client.println("<option value='12'>A cada 12 horas</option>");
-    client.println("<option value='24'>A cada 24 horas</option>");
-    client.println("<option value='0'>Único</option>");
-    client.println("</select>");
-    client.println("</div>");
-
-    client.println("<button type='submit'>Salvar</button>");
-    client.println("</form></div>");
-
-    client.println("<div class='card'>");
-    client.println("<h2>Controle de Ciclo</h2>");
-    client.println("<p>Interromper irrigação automática</p>");
+    client.println("<h2>Controle</h2>");
+    client.println("<p>Interromper irrigação automática ou abrir a tela de configuração.</p>");
     client.println("<a href='/parar'><button style='background-color:#dc3545'>Parar Ciclo</button></a>");
+    client.println("<br><br>");
+    client.println("<a href='/config'><button style='background-color:#007bff'>Configurar</button></a>");
     client.println("</div>");
 
     client.println("</div></body></html>");

@@ -17,6 +17,8 @@ private:
 
     // Métodos privados
     String getParameterValue(String uri, String param);
+    String getRequestPath(String requestLine);
+    String decodeURL(String text);
 
     void gerarPaginaHTML(
         WiFiClient client,
@@ -28,6 +30,8 @@ private:
         String horarioAtual,
         String dataAtual
     );
+
+    void gerarPaginaConfiguracao(WiFiClient client);
 
 public:
     // Construtor
