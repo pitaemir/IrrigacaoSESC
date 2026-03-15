@@ -12,7 +12,7 @@
 #include "WaterFlow.h"
 
 // ==== Configuracao Servidor Web ====
-const char* WIFI_SSID = "ESP32-Servidor";
+const char* WIFI_SSID = "Controle Irrigacao";
 const char* WIFI_PASSWORD = "123456789";
 int numeroAtivacao = 0;
 
@@ -45,10 +45,18 @@ void setup() {
     dht.begin();
     rele.iniciar();
     rtc.iniciar();
-    rtc.ajustarHorario(2026, 3, 13,
-       17, 59, 0);  // Ajusta para uma data fixa (teste)
 
-    if (!rtc.iniciar()) {
+
+
+
+    // AJUSTE DE HORA PARA TESTES (COMENTAR APÓS O AJUSTE INICIAL)
+    rtc.ajustarHorario(2026, 3, 13,
+       17, 59, 0); 
+
+    
+
+    
+       if (!rtc.iniciar()) {
         Serial.println("Falha ao inicializar o RTC. O agendamento nao funcionará.");
     }
 
