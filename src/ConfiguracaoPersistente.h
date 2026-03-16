@@ -58,6 +58,8 @@ public:
     
     bool isAtualizada() const { return _atualizada; }
     void clearAtualizada() { _atualizada = false; }
+    int getNumeroAtivacao() const { return numeroAtivacao; }
+    int numeroAtivacao = 0; // Contador de ativações para logs
 };
 
 #endif // CONFIGURACAOPERSISTENTE_H

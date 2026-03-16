@@ -14,8 +14,6 @@
 // ==== Configuracao Servidor Web ====
 const char* WIFI_SSID = "Controle Irrigacao";
 const char* WIFI_PASSWORD = "123456789";
-int numeroAtivacao = 0;
-
 
 
 // ==== CONFIG DHT ====
@@ -24,9 +22,9 @@ int numeroAtivacao = 0;
 DHT dht(DHTPIN, DHTTYPE);
 
 // ==== OBJETOS GLOBAIS ====
-ServidorWeb servidor(WIFI_SSID, WIFI_PASSWORD);
-DateTime proximoAcionamento;
 ConfiguracaoPersistente configAtual;
+ServidorWeb servidor(WIFI_SSID, WIFI_PASSWORD, &configAtual);
+DateTime proximoAcionamento;
 RTC rtc;
 Rele rele(18);              // Pino do relé
 WaterFlow fluxo(2);         // Sensor de fluxo no pino 2
@@ -50,8 +48,8 @@ void setup() {
 
 
     // AJUSTE DE HORA PARA TESTES (COMENTAR APÓS O AJUSTE INICIAL)
-    rtc.ajustarHorario(2026, 3, 13,
-       17, 59, 0); 
+    rtc.ajustarHorario(2026, 3, 16,
+       13, 59, 0); 
 
     
 
@@ -87,8 +85,8 @@ void loop() {
     // === 2. ATUALIZAÇÃO DO SENSOR DE FLUXO ===
     fluxo.atualizarCalculo();  
     float vazao = fluxo.getVazao();
-    float total = fluxo.getTotal();
 
+    float total = fluxo.getTotal();
     // === 3. HORÁRIO ATUAL VIA RTC ===
     //rtc.atualizarHora();
     DateTime agora = rtc.getAgora();
@@ -155,7 +153,7 @@ void minhaRotinaDeExecucao() {
     if (rtc.alarmeLigou()) {
         Serial.println(">>> ALARME 1 DISPAROU — LIGAR RELE <<<");
         rele.ligar();
-        numeroAtivacao++;
+        configAtual.numeroAtivacao++;
     }
 
     // EVENTO ALARME 2
@@ -237,7 +235,7 @@ if (rtc.alarmeDesligou()) {
         Serial.println(rele.estaLigado() ? "LIGADO" : "DESLIGADO");
         Serial.println("----------------------------------------------");
         Serial.print("Número de ativações: ");
-        Serial.println(numeroAtivacao);
+        Serial.println(configAtual.numeroAtivacao);
 
         Serial.print("Próximo acionamento: ");
         Serial.print(proximoAcionamento.day());

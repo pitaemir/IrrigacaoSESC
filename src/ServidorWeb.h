@@ -5,17 +5,14 @@
 #include "ConfiguracaoPersistente.h"
 #include "Rele.h"
 
-/**
- * @brief Classe para gerenciar a interface web, Wi-Fi e processamento de requisições.
- */
 class ServidorWeb {
 private:
     const char* ssid;
     const char* password;
+    ConfiguracaoPersistente* configAtual;
     WiFiServer server;
     String header;
 
-    // Métodos privados
     String getParameterValue(String uri, String param);
     String getRequestPath(String requestLine);
     String decodeURL(String text);
@@ -34,11 +31,10 @@ private:
     void gerarPaginaConfiguracao(WiFiClient client);
 
 public:
-    // Construtor
-    ServidorWeb(const char* s, const char* p);
+    ServidorWeb(const char* s, const char* p, ConfiguracaoPersistente* config);
 
-    // Métodos públicos
     void iniciarAP();
+    int getNumeroAtivacao() const { return configAtual->getNumeroAtivacao(); }
 
     void manusearClientes(
         Rele& valvula,
@@ -52,4 +48,4 @@ public:
     );
 };
 
-#endif // SERVIDORWEB_H
+#endif

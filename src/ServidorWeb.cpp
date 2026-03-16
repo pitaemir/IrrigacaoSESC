@@ -4,9 +4,9 @@
 // =========================================================
 // CONSTRUTOR
 // =========================================================
-ServidorWeb::ServidorWeb(const char* s, const char* p)
-    : ssid(s), password(p), server(80) {}
-
+ServidorWeb::ServidorWeb(const char* s, const char* p, ConfiguracaoPersistente* config)
+    : ssid(s), password(p), configAtual(config), server(80) {
+}
 
 // =========================================================
 // INICIAR ACCESS POINT
@@ -355,6 +355,7 @@ void ServidorWeb::gerarPaginaHTML(
     client.printf("<p><b>Umidade:</b> %.1f %%</p>", umidade);
     client.printf("<p><b>Fluxo Atual:</b> %.2f L/min</p>", fluxoAtual);
     client.printf("<p><b>Total Irrigado:</b> %.2f L</p>", fluxoTotal);
+    client.printf("<p><b>Número de ativações:</b> %d</p>", getNumeroAtivacao());
     client.println("</div>");
 
     // CONTROLE DE CICLO + CONFIGURAR
