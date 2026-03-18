@@ -9,7 +9,6 @@ Sistema embarcado para **controle inteligente de irrigação** utilizando **ESP3
 
 O projeto foi desenvolvido utilizando **arquitetura modular em C++**, permitindo fácil manutenção, expansão e reutilização de componentes.
 
----
 
 # Visão Geral
 
@@ -21,7 +20,6 @@ Este sistema automatiza a irrigação controlando uma **válvula ou bomba de ág
 
 O dispositivo também monitora **temperatura, umidade e fluxo de água**, permitindo acompanhar o funcionamento do sistema em tempo real.
 
----
 
 # Funcionalidades
 
@@ -33,7 +31,6 @@ O dispositivo também monitora **temperatura, umidade e fluxo de água**, permit
 ✔ Armazenamento persistente das configurações  
 ✔ Arquitetura modular em C++  
 
----
 
 # Arquitetura do Sistema
 
@@ -65,7 +62,7 @@ src/
 
 Cada módulo encapsula funcionalidades específicas do hardware ou da lógica do sistema.
 
----
+
 
 # Hardware Utilizado
 
@@ -77,7 +74,6 @@ DS3231 | Relógio de tempo real (RTC) |
 Relay Module | Controle da válvula ou bomba |
 Water Flow Sensor | Medição do fluxo de água |
 
----
 
 # Pinout Utilizado (Exemplo)
 
@@ -90,7 +86,6 @@ RTC DS3231 | I2C (GPIO 21 / GPIO 22) |
 
 > Os pinos podem ser alterados conforme necessidade do hardware.
 
----
 
 # Interface Web
 
@@ -108,7 +103,6 @@ O dispositivo pode funcionar como:
 - **Access Point (AP)**
 - **cliente conectado à rede WiFi**
 
----
 
 # Sensores
 
@@ -118,7 +112,6 @@ Medidas utilizando sensor **DHT11/DHT22**.
 
 Permite monitoramento ambiental e futuras melhorias na lógica de irrigação baseada em clima.
 
----
 
 ## Fluxo de Água
 
@@ -128,7 +121,6 @@ O sensor de fluxo permite:
 - detectar falhas no sistema hidráulico
 - monitorar consumo de irrigação
 
----
 
 # Agendamento de Irrigação
 
@@ -140,7 +132,6 @@ Funcionalidades:
 - controle automático do relé
 - sincronização do horário do sistema
 
----
 
 # Armazenamento Persistente
 
@@ -165,7 +156,6 @@ Bibliotecas necessárias:
 - `DHT sensor library`
 - `RTClib`
 
----
 
 ### 2️⃣ Clonar o repositório
 
@@ -173,13 +163,11 @@ Bibliotecas necessárias:
 git clone https://github.com/pitaemir/IrrigacaoSESC.git
 ```
 
----
 
 ### 3️⃣ Compilar e enviar para o ESP32
 
 Conecte o ESP32 via USB, descomente a linha referente ao preenchimento da hora atual do RTC (//rtc.ajustarHorario(2026, 3, 13,//   15, 17, 0);), e faça o upload do firmware, comente a linha novamente e faça o upload novamente.
 
----
 
 ### 4️⃣ Acessar interface web
 
@@ -202,7 +190,6 @@ http://192.168.4.1
 - Sensores de umidade do solo
 - Controle de múltiplas zonas de irrigação
 
----
 
 # Autor
 
