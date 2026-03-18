@@ -3,7 +3,7 @@
 ![ESP32](https://img.shields.io/badge/ESP32-Embedded-red)
 ![Arduino](https://img.shields.io/badge/Framework-Arduino-blue)
 ![C++](https://img.shields.io/badge/Language-C++-orange)
-![Status](https://img.shields.io/badge/Status-Development-yellow)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
 Sistema embarcado para **controle inteligente de irrigação** utilizando **ESP32**, sensores ambientais e um **servidor web embarcado** para monitoramento e configuração.
 
