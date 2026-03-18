@@ -1,5 +1,44 @@
 #include "ServidorWeb.h"
 #include <Arduino.h>
+#include <time.h>
+
+
+static String doisDigitos(const String& valor) {
+    return (valor.length() < 2) ? "0" + valor : valor;
+}
+
+static String formatarHorario(String horario) {
+    int p1 = horario.indexOf(':');
+    int p2 = horario.indexOf(':', p1 + 1);
+
+    if (p1 == -1 || p2 == -1) {
+        return horario;
+    }
+
+    String h = horario.substring(0, p1);
+    String m = horario.substring(p1 + 1, p2);
+    String s = horario.substring(p2 + 1);
+
+    return doisDigitos(h) + ":" + doisDigitos(m) + ":" + doisDigitos(s);
+}
+static String formatarDataHora(time_t valor) {
+    struct tm* t = localtime(&valor);
+    if (!t) return "--";
+
+    char buffer[25];
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "%02d/%02d/%04d %02d:%02d:%02d",
+        t->tm_mday,
+        t->tm_mon + 1,
+        t->tm_year + 1900,
+        t->tm_hour,
+        t->tm_min,
+        t->tm_sec
+    );
+    return String(buffer);
+}
 
 // =========================================================
 // CONSTRUTOR
@@ -53,6 +92,107 @@ String ServidorWeb::decodeURL(String text) {
     text.replace("%20", " ");
     text.replace("+", " ");
     return text;
+}
+
+bool ServidorWeb::converterParaEpoch(
+    const String& data,
+    const String& horario,
+    time_t& epoch
+) {
+    int barra1 = data.indexOf('/');
+    int barra2 = data.indexOf('/', barra1 + 1);
+
+    int p1 = horario.indexOf(':');
+    int p2 = horario.indexOf(':', p1 + 1);
+
+    if (barra1 < 0 || barra2 < 0 || p1 < 0 || p2 < 0) {
+        return false;
+    }
+
+    int dia = data.substring(0, barra1).toInt();
+    int mes = data.substring(barra1 + 1, barra2).toInt();
+    int ano = data.substring(barra2 + 1).toInt();
+
+    int hora = horario.substring(0, p1).toInt();
+    int minuto = horario.substring(p1 + 1, p2).toInt();
+    int segundo = horario.substring(p2 + 1).toInt();
+
+    struct tm t = {};
+    t.tm_mday = dia;
+    t.tm_mon = mes - 1;
+    t.tm_year = ano - 1900;
+    t.tm_hour = hora;
+    t.tm_min = minuto;
+    t.tm_sec = segundo;
+
+    epoch = mktime(&t);
+    return (epoch != -1);
+}
+
+String ServidorWeb::formatarDuracao(int duracaoMinutos) {
+    if (duracaoMinutos <= 0) return "0 min";
+
+    int horas = duracaoMinutos / 60;
+    int minutos = duracaoMinutos % 60;
+
+    if (horas > 0 && minutos > 0) {
+        return String(horas) + "h " + String(minutos) + "min";
+    }
+
+    if (horas > 0) {
+        return String(horas) + "h";
+    }
+
+    return String(minutos) + " min";
+}
+
+String ServidorWeb::calcularProximoDisparo(String dataAtual, String horarioAtual) {
+    if (configAtual == nullptr) {
+        return "--";
+    }
+
+    horarioAtual = formatarHorario(horarioAtual);
+
+    time_t agoraEpoch;
+    if (!converterParaEpoch(dataAtual, horarioAtual, agoraEpoch)) {
+        return "--";
+    }
+
+    int dia = configAtual->getDia();
+    int mes = configAtual->getMes();
+    int ano = configAtual->getAno();
+    int hora = configAtual->getHora();
+    int minuto = configAtual->getMinuto();
+    int segundo = configAtual->getSegundo();
+    int ciclo = configAtual->getCiclo();
+
+    char dataConfig[11];
+    char horaConfig[9];
+
+    snprintf(dataConfig, sizeof(dataConfig), "%02d/%02d/%04d", dia, mes, ano);
+    snprintf(horaConfig, sizeof(horaConfig), "%02d:%02d:%02d", hora, minuto, segundo);
+
+    time_t disparoEpoch;
+    if (!converterParaEpoch(String(dataConfig), String(horaConfig), disparoEpoch)) {
+        return "--";
+    }
+
+    // Disparo único
+    if (ciclo == 0) {
+        if (disparoEpoch >= agoraEpoch) {
+            return formatarDataHora(disparoEpoch);
+        }
+        return "Agendamento único já executado";
+    }
+
+    // Disparo cíclico
+    long intervaloSegundos = (long)ciclo * 3600L;
+
+    while (disparoEpoch < agoraEpoch) {
+        disparoEpoch += intervaloSegundos;
+    }
+
+    return formatarDataHora(disparoEpoch);
 }
 
 
@@ -250,6 +390,14 @@ void ServidorWeb::manusearClientes(
                             ciclo
                         );
 
+                        // config.setDia(dia);
+                        // config.setMes(mes);
+                        // config.setAno(ano);
+                        // config.setHora(hora);
+                        // config.setDuracao(duracao);
+                        // config.setCiclo(ciclo);
+                        // config.setAtualizada(true);
+
                         config.salvar();
 
                         client.println("HTTP/1.1 303 See Other");
@@ -304,6 +452,17 @@ void ServidorWeb::gerarPaginaHTML(
     String horarioAtual,
     String dataAtual
 ) {
+    String proximoDisparo = calcularProximoDisparo(dataAtual, horarioAtual);
+    String duracaoProgramada = formatarDuracao(configAtual->getDuracao());
+
+    String cicloTexto;
+    int ciclo = configAtual->getCiclo();
+    if (ciclo == 0) {
+        cicloTexto = "Único";
+    } else {
+        cicloTexto = "A cada " + String(ciclo) + " hora(s)";
+    }
+    horarioAtual = formatarHorario(horarioAtual);
     client.println("HTTP/1.1 200 OK");
     client.println("Content-type:text/html");
     client.println("Connection: close");
@@ -348,6 +507,15 @@ void ServidorWeb::gerarPaginaHTML(
     client.printf("<p><b>Hora:</b> %s</p>", horarioAtual.c_str());
     client.println("</div>");
 
+        // PRÓXIMO DISPARO
+    client.println("<div class='card'>");
+    client.println("<h2>Próxima Irrigação</h2>");
+    client.printf("<p><b>Próximo disparo:</b> %s</p>", proximoDisparo.c_str());
+    client.printf("<p><b>Duração:</b> %s</p>", duracaoProgramada.c_str());
+    client.printf("<p><b>Ciclo:</b> %s</p>", cicloTexto.c_str());
+    client.printf("<p><b>Número de ativações:</b> %d</p>", getNumeroAtivacao());
+    client.println("</div>");
+
     // SENSORES
     client.println("<div class='card'>");
     client.println("<h2>Sensores</h2>");
@@ -355,7 +523,6 @@ void ServidorWeb::gerarPaginaHTML(
     client.printf("<p><b>Umidade:</b> %.1f %%</p>", umidade);
     client.printf("<p><b>Fluxo Atual:</b> %.2f L/min</p>", fluxoAtual);
     client.printf("<p><b>Total Irrigado:</b> %.2f L</p>", fluxoTotal);
-    client.printf("<p><b>Número de ativações:</b> %d</p>", getNumeroAtivacao());
     client.println("</div>");
 
     // CONTROLE DE CICLO + CONFIGURAR

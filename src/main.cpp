@@ -48,8 +48,8 @@ void setup() {
 
 
     // AJUSTE DE HORA PARA TESTES (COMENTAR APÓS O AJUSTE INICIAL)
-    rtc.ajustarHorario(2026, 3, 16,
-       13, 59, 0); 
+    //rtc.ajustarHorario(2026, 3, 17,
+    //   18, 27, 0); 
 
     
 
@@ -171,7 +171,23 @@ if (rtc.alarmeDesligou()) {
         Serial.println(" hora(s)...");
 
         DateTime agora = rtc.getAgora();
-        DateTime proximo = agora + TimeSpan(cicloHoras / 24, cicloHoras % 24, 0, 0);
+        Serial.print("Hora atual - novo alarmes: ");
+        Serial.print(agora.hour());
+        Serial.print(":");
+        Serial.print(agora.minute());
+        Serial.print(":");
+        Serial.println(agora.second());
+
+        DateTime agoraSemSegundos(
+            agora.year(),
+            agora.month(),
+            agora.day(),
+            agora.hour(),
+            0, // minutos zerados
+            0 // segundos zerados
+        );
+        
+        DateTime proximo = agoraSemSegundos + TimeSpan(cicloHoras / 24, cicloHoras % 24, 0, 0);
         proximoAcionamento = proximo;
 
         rtc.agendarAcionamento(
@@ -183,6 +199,17 @@ if (rtc.alarmeDesligou()) {
             proximo.second(),
             configAtual.getDuracao()
         );
+        configAtual.salvarTemporariamente(
+            proximo.day(), 
+            proximo.month(), 
+            proximo.year(), 
+            proximo.hour(), 
+            proximo.minute(), 
+            proximo.second(), 
+            configAtual.getDuracao(), 
+            cicloHoras
+        );
+        configAtual.salvar();
 
         Serial.print("Proximo acionamento agendado para: ");
         Serial.print(proximo.day());

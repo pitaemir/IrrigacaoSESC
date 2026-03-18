@@ -27,7 +27,7 @@ void Configuracao::imprimir() {
         Serial.print("Hora Programada: "); Serial.print(hora); Serial.print(":"); 
         Serial.print(minuto); Serial.print(":"); Serial.println(segundo);
         Serial.print("Duracao: "); Serial.print(duracao); Serial.println(" minutos");
-        Serial.print("Ciclo: "); Serial.println(ciclo); Serial.println(" horas");
+        Serial.print("Ciclo: "); Serial.print(ciclo); Serial.println(" horas");
     } else {
         Serial.println("Nenhuma configuracao salva ainda.");
     }

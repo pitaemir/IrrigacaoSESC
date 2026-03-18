@@ -17,6 +17,14 @@ private:
     String getRequestPath(String requestLine);
     String decodeURL(String text);
 
+    String calcularProximoDisparo(String dataAtual, String horarioAtual);
+    String formatarDuracao(int duracaoMinutos);
+    bool converterParaEpoch(
+        const String& data,
+        const String& horario,
+        time_t& epoch
+    );
+
     void gerarPaginaHTML(
         WiFiClient client,
         String valvulaEstado,

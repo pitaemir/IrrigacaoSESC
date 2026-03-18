@@ -55,6 +55,16 @@ public:
     int getMinuto() const { return minuto; }
     int getSegundo() const { return segundo; }
     int getDuracao() const { return duracao; }
+
+    void setDia(int d) { dia = d; }
+    void setMes(int m) { mes = m; }
+    void setAno(int a) { ano = a; }
+    void setHora(int h) { hora = h; }
+    void setMinuto(int m) { minuto = m; }
+    void setSegundo(int s) { segundo = s; }
+    void setDuracao(int d) { duracao = d; }
+    void setCiclo(int c) { ciclo = c; }
+    void setAtualizada(bool status) { _atualizada = status; }
     
     bool isAtualizada() const { return _atualizada; }
     void clearAtualizada() { _atualizada = false; }
